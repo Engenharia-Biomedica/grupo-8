@@ -1,42 +1,44 @@
 import streamlit as st
-import streamlit.components.v1 as sthtml
 import requests
-
-sthtml.html("<h1>Streamlit Frontend</h1>")
-sthtml.html("<img src='https://www.streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.png' width='200px'>")
-
-page = 'Search'
 
 
 def send_data_to_flask(data):
-    response = requests.post("http://localhost:5000/message", json=data)
-    return response.json()
+    try:
+        response = requests.post("http://localhost:5000/message", json=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error("Error from Flask: " + response.text)
+            return {}
+    except requests.exceptions.RequestException as e:
+        st.error("Request failed: " + str(e))
+        return {}
 
 
-def ChangePage():
-    match page:
-        case 'Search':
-            page = 'Results'
-        case 'Results':
-            page = 'Search'
+def on_send_button_clicked():
+    """Callback function for 'Send to Flask' button."""
+    response_data = send_data_to_flask({"bacteria": st.session_state.bacteria})
+    st.session_state.response_data = response_data
+    st.session_state.page = 'results'
 
 
-def Search():
-    global page, response_data
+def on_go_back_button_clicked():
+    st.session_state.page = 'search'
+
+
+def search_page():
     st.title("Streamlit Frontend")
+    st.session_state.bacteria = st.text_input("Enter the name of the bacteria")
 
-    bacteria = st.text_input("Enter the name of the bacteria")
-
-    if st.button("Send to Flask"):
-        page = 'Results'
-        response_data = send_data_to_flask({"bacteria": bacteria})
+    st.button("Send to Flask", on_click=on_send_button_clicked)
 
 
-def Results():
-    st.button("Go back to Search")
-    if response_data and 'results' in response_data:
+def results_page():
+    st.button("Go back to Search", on_click=on_go_back_button_clicked)
+
+    response_data = st.session_state.get('response_data', {})
+    if 'results' in response_data:
         st.write("Results from Flask:")
-
         for result in response_data['results']:
             st.text(result)
     else:
@@ -44,10 +46,17 @@ def Results():
 
 
 def main():
-    if page == 'Search':
-        Search()
-    if page == 'Results':
-        Results()
+    st.image('https://www.streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.png', width=200)
+
+    if 'page' not in st.session_state:
+        st.session_state['page'] = 'search'
+
+    if st.session_state['page'] == 'search':
+        st.write("Displaying Search Page")
+        search_page()
+    elif st.session_state['page'] == 'results':
+        st.write("Displaying Results Page")
+        results_page()
 
 
 if __name__ == "__main__":
