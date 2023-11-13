@@ -3,6 +3,7 @@ from autofill import autofill
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
+from thefuzz import fuzz, process
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:8501"}})
@@ -14,14 +15,23 @@ meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 def find_matches(df, search_string):
     # Convert all words to lowercase for case-insensitive comparison
     autofill_words = df['ds_micro_organismo'].str.lower().tolist()
+    raw_probable_words = process.extract(
+        search_string, autofill_words, limit=5)
+    query = []
+    for i in range(len(raw_probable_words)):
+        if raw_probable_words[i][1] >= 75:
+            if raw_probable_words[i][1] == 100:
+                print('jackpot bitches!')
+            query.append(raw_probable_words[i][0])
 
     # Register words with autofill (assuming autofill expects lowercase words)
     autofill.register_words(autofill_words)
     lower_search_string = search_string.lower()
 
     # Perform the search
-    query = autofill.search(lower_search_string) if lower_search_string not in autofill_words else [
-        lower_search_string]
+    if query == []:
+        query = autofill.search(lower_search_string) if lower_search_string not in autofill_words else [
+            lower_search_string]
 
     # Convert the DataFrame to lowercase once
     lower_df = df.apply(lambda x: x.astype(str).str.lower())
