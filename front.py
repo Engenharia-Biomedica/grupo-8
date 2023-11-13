@@ -1,6 +1,8 @@
 import streamlit as st
 from streamlit_modal import Modal
 import streamlit.components.v1 as html
+# https://github.com/okld/streamlit-elements
+from streamlit_elements import dashboard as dash, nivo, elements, mui, html
 import requests
 import pandas as pd
 import numpy as np
@@ -31,19 +33,9 @@ def on_send_button_clicked():
             {"bacteria": st.session_state.bacteria})
         st.session_state.page = 'results' if st.session_state.response_data else 'search'
 
-    youfailed = Modal(key="youfailed", title="You failed",
-                      max_width=500)
-    if st.session_state.bacteria == "":
-        with youfailed.container():
+        response_data = send_data_to_flask(
+            {"bacteria": st.session_state.bacteria})
 
-            st.write("You failed")
-    else:
-        if st.session_state.bacteria:
-            response_data = send_data_to_flask(
-                {"bacteria": st.session_state.bacteria})
-        elif st.session_state.bac_code:
-            response_data = send_data_to_flask(
-                {"code": st.session_state.bac_code})
         st.session_state.response_data = response_data
         st.session_state.page = 'results'
 
@@ -63,6 +55,20 @@ def search_page():
 
 
 def results_page():
+    with elements('Grid'):
+        layout = [
+            dash.Item('first_item', 0, 0, 2, 2,
+                      isDraggable=False, isResizable=False),
+            dash.Item('second_item', 2, 0, 2, 2,
+                      isDraggable=False, isResizable=False),
+            dash.Item('third_item', 0, 2, 1, 1,
+                      isDraggable=False, isResizable=False),
+
+        ]
+        with dash.Grid(layout):
+            mui.Paper('first_item', key='first_item')
+            mui.Paper('second_item', key='second_item')
+            mui.Paper('third_item', key='third_item')
     st.button("Go back to Search", on_click=on_go_back_button_clicked)
 
     if 'response_data' in st.session_state and st.session_state.response_data:
