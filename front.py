@@ -6,6 +6,7 @@ from streamlit_elements import dashboard as dash, nivo, elements, mui, html
 import requests
 import pandas as pd
 import numpy as np
+import random
 
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 
@@ -55,25 +56,95 @@ def search_page():
 
 
 def results_page():
-    with elements('Grid'):
-        layout = [
-            dash.Item('first_item', 0, 0, 2, 2,
-                      isDraggable=False, isResizable=False),
-            dash.Item('second_item', 2, 0, 2, 2,
-                      isDraggable=False, isResizable=False),
-            dash.Item('third_item', 0, 2, 1, 1,
-                      isDraggable=False, isResizable=False),
+
+    with elements("nivo_charts"):
+        diseases = meds['ds_micro_organismo'].value_counts()
+
+        DATA = [
+            {'id': disease, 'value': count}
+            for disease, count in diseases.items()
+
 
         ]
-        with dash.Grid(layout):
-            mui.Paper('first_item', key='first_item')
-            mui.Paper('second_item', key='second_item')
-            mui.Paper('third_item', key='third_item')
+
+        with mui.Box(sx={"height": 500}):
+            nivo.Pie(
+                data=DATA,
+                margin={"top": 40, "right": 80, "bottom": 80, "left": 80},
+                innerRadius=0.5,
+                padAngle=0.7,
+                cornerRadius=3,
+                activeOuterRadiusOffset=8,
+                borderWidth=1,
+                borderColor={"from": "color", "modifiers": [["darker", 0.2]]},
+                arcLinkLabelsSkipAngle=10,
+                arcLinkLabelsTextColor="#333333",
+                arcLinkLabelsThickness=2,
+                arcLinkLabelsColor={"from": "color"},
+                arcLabelsSkipAngle=10,
+                arcLabelsTextColor={"from": "color",
+                                    "modifiers": [["darker", 2]]},
+                defs=[
+                    {
+                        "id": "dots",
+                        "type": "patternDots",
+                        "background": "inherit",
+                        "color": "rgba(255, 255, 255, 0.3)",
+                        "size": 4,
+                        "padding": 1,
+                        "stagger": True
+                    },
+                    {
+                        "id": "lines",
+                        "type": "patternLines",
+                        "background": "inherit",
+                        "color": "rgba(255, 255, 255, 0.3)",
+                        "rotation": -45,
+                        "lineWidth": 6,
+                        "spacing": 10
+                    }
+                ],
+                fill=[
+
+                    {'match': {'id': name}, 'id': random.choice(
+                        ["dots", "lines", ''])}
+                    for name in diseases.keys()
+                ],
+                legends=[
+                    {
+                        "anchor": "bottom",
+                        "direction": "row",
+                        "justify": False,
+                        "translateX": 0,
+                        "translateY": 56,
+                        "itemsSpacing": 0,
+                        "itemWidth": 100,
+                        "itemHeight": 18,
+                        "itemTextColor": "#999",
+                        "itemDirection": "left-to-right",
+                        "itemOpacity": 1,
+                        "symbolSize": 18,
+                        "symbolShape": "circle",
+                        "effects": [
+                            {
+                                "on": "hover",
+                                "style": {
+                                    "itemTextColor": "#000"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            )
+
     st.button("Go back to Search", on_click=on_go_back_button_clicked)
 
     if 'response_data' in st.session_state and st.session_state.response_data:
+        if st.session_state.response_data['results'] == []:
+            st.error("No results found")
+            return
         st.balloons()
-        st.write("Results from Flask:")
+        st.write(f"Results from Query with {st.session_state.bacteria}:")
 
         # Organize the results by disease
         disease_to_antibiotics = {}
