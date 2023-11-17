@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_modal import Modal
 import streamlit.components.v1 as html
 # https://github.com/okld/streamlit-elements
-from streamlit_elements import dashboard as dash, nivo, elements, mui, html
+from streamlit_elements import dashboard as dash, nivo, elements, mui, html, editor
 import requests
 import pandas as pd
 import numpy as np
@@ -43,9 +43,23 @@ def on_send_button_clicked():
 
 def on_go_back_button_clicked():
     st.session_state.page = 'search'
+    st.session_state['active_tab'] = 0
 
 
 def search_page():
+    # Inject custom CSS
+    st.markdown("""
+        <style>
+        .my-custom-style {
+            color: red;
+            font-size: 20px;
+            /* other CSS properties */
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Use the custom style in a markdown
+    st.markdown('<img class="my-custom-style" src="/static/imgs/jpg2png.png"></img>', unsafe_allow_html=True)
     st.title("buscador de antibioticos da Lilica")
 
     st.session_state.bacteria = st.text_input(
@@ -56,7 +70,9 @@ def search_page():
 
 
 def results_page():
-
+    global bacteria
+    bacteria = st.session_state.bacteria
+    st.session_state.bacteria = None
     st.button("Go back to Search", on_click=on_go_back_button_clicked)
     if 'response_data' in st.session_state and st.session_state.response_data:
         if st.session_state.response_data['results'] == []:
@@ -71,34 +87,48 @@ def results_page():
             else:
                 disease_to_antibiotics[micro_organism].append(antibiotic)
         st.balloons()
+
+        # Create dynamic tabs based on diseases
         with elements("nivo_charts"):
+            layout = [
+                dash.Item('first_item', 0, 0, 2, 2),
+                dash.Item('second_item', 0, 2, 2, 2),
+                dash.Item('third_item', 1, 1, 2, 2),
+            ]
+            with dash.Grid(layout):
+                with mui.Box(sx={"height": 500, 'border': '1px dashed grey'}, key="Second_Item"):
+                    st.write(f"Results from Query with {bacteria}:")
+                    
+                    # Create Tabs dynamically
+                    if 'active_tab' not in st.session_state:
+                        st.session_state['active_tab'] = 0
+
+                    # Create Tabs dynamically
+                    with mui.Tabs(variant='scrollable',value=st.session_state['active_tab'], onChange=lambda _, value: setattr(st.session_state, 'active_tab', int(value))):
+                            for index, disease in enumerate(disease_to_antibiotics.keys()):
+                                mui.Tab(label=disease, value=index)
+
+                        # Display content for the active tab
+                    active_disease = list(disease_to_antibiotics.keys())[st.session_state['active_tab']]
+                    for antibiotic in disease_to_antibiotics[active_disease]:
+                        mui.Typography(antibiotic)
+
+                    # Display content for the active tab
+                    print(st.session_state['active_tab'])
+                    active_disease = list(disease_to_antibiotics.keys())[st.session_state['active_tab']]
+                    for antibiotic in disease_to_antibiotics[active_disease]:
+                        mui.Typography(antibiotic)
+        # Rest of your code for pie chart...
+
+
             diseases = meds['ds_micro_organismo'].value_counts()
 
             DATA = [
                 {'id': disease, 'value': count}
                 for disease, count in diseases.items()
-
-
             ]
 
-            layout = [
-                dash.Item('first_item', 0, 0, 2, 2),
-                dash.Item('second_item', 0, 2, 2, 2),
-                dash.Item('third_item', 1, 1, 2, 2),
-
-
-            ]
-            with dash.Grid(layout):
-                with mui.Box(sx={"height": 500, 'border': '1px dashed grey'}, key="Second_Item"):
-                    st.write(
-                        f"Results from Query with {st.session_state.bacteria}:")
-                    tabs = st.tabs(list(disease_to_antibiotics.keys()))
-                    for tab, (disease, antibiotics) in zip(tabs, disease_to_antibiotics.items()):
-                        with tab:
-                            st.write(f"Antibiotics for {disease}:")
-                            for antibiotic in antibiotics:
-                                st.text(antibiotic)
-                with mui.Box(sx={"height": 500}, key="first_item"):
+            with mui.Box(sx={"height": 500}, key="first_item"):
                     nivo.Pie(
                         data=DATA,
                         margin={"top": 40, "right": 80,
@@ -187,3 +217,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+'''
+bater numero de resultados que deram positivo com os resultados que deram negativo
+Gera porcentagem de resistencia
+    -> Ver se o antibiotico mudou conforme o tempo para dar mais certeza a resistencia
+
+Para tempo, filtrar resultados para somente aqueles dentro do tempo selecionado
+
+Graficos de dentro do Einstein cm mais csa
+         -> Pega so os dados que aconteceram dentro do Einstein
+antibioticos prescritos com base no prontuario
+
+'''
