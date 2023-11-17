@@ -62,7 +62,7 @@ def results_page():
         if st.session_state.response_data['results'] == []:
             st.error("No results found")
             return
-        
+
         disease_to_antibiotics = {}
         for result in st.session_state.response_data['results']:
             antibiotic, micro_organism = result
@@ -80,18 +80,19 @@ def results_page():
 
 
             ]
-    
+
             layout = [
-                dash.Item('first_item',0,0,2,2),
-                dash.Item('second_item',0,2,2,2),
-                dash.Item('third_item',1,1,2,2),
+                dash.Item('first_item', 0, 0, 2, 2),
+                dash.Item('second_item', 0, 2, 2, 2),
+                dash.Item('third_item', 1, 1, 2, 2),
 
 
             ]
             with dash.Grid(layout):
                 with mui.Box(sx={"height": 500, 'border': '1px dashed grey'}, key="Second_Item"):
-                    st.write(f"Results from Query with {st.session_state.bacteria}:")
-                    tabs = mui.tabs(list(disease_to_antibiotics.keys()))
+                    st.write(
+                        f"Results from Query with {st.session_state.bacteria}:")
+                    tabs = st.tabs(list(disease_to_antibiotics.keys()))
                     for tab, (disease, antibiotics) in zip(tabs, disease_to_antibiotics.items()):
                         with tab:
                             st.write(f"Antibiotics for {disease}:")
@@ -100,13 +101,15 @@ def results_page():
                 with mui.Box(sx={"height": 500}, key="first_item"):
                     nivo.Pie(
                         data=DATA,
-                        margin={"top": 40, "right": 80, "bottom": 80, "left": 80},
+                        margin={"top": 40, "right": 80,
+                                "bottom": 80, "left": 80},
                         innerRadius=0.5,
                         padAngle=0.7,
                         cornerRadius=3,
                         activeOuterRadiusOffset=8,
                         borderWidth=1,
-                        borderColor={"from": "color", "modifiers": [["darker", 0.2]]},
+                        borderColor={"from": "color",
+                                     "modifiers": [["darker", 0.2]]},
                         arcLinkLabelsSkipAngle=10,
                         arcLinkLabelsTextColor="#333333",
                         arcLinkLabelsThickness=2,
@@ -167,9 +170,6 @@ def results_page():
                         ]
                     )
 
-    
-     
-      
     else:
         st.error("No results received or error in backend")
 
