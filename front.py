@@ -59,7 +59,8 @@ def search_page():
     """, unsafe_allow_html=True)
 
     # Use the custom style in a markdown
-    st.markdown('<img class="my-custom-style" src="/static/imgs/jpg2png.png"></img>', unsafe_allow_html=True)
+    st.markdown('<img class="my-custom-style" src="/static/imgs/jpg2png.png"></img>',
+                unsafe_allow_html=True)
     st.title("buscador de antibioticos da Lilica")
 
     st.session_state.bacteria = st.text_input(
@@ -79,13 +80,33 @@ def results_page():
             st.error("No results found")
             return
 
+        diseases = meds['ds_micro_organismo'].value_counts()
+        Pie_Data = [
+            {'id': disease, 'value': count}
+            for disease, count in diseases.items()
+        ]
         disease_to_antibiotics = {}
+        disease_to_times = {}
+        disease_to_resistence = {}
         for result in st.session_state.response_data['results']:
             antibiotic, micro_organism = result
-            if micro_organism not in disease_to_antibiotics:
-                disease_to_antibiotics[micro_organism] = [antibiotic]
-            else:
-                disease_to_antibiotics[micro_organism].append(antibiotic)
+
+            # Update antibiotics
+            disease_to_antibiotics.setdefault(
+                micro_organism, []).append(antibiotic)
+
+            # Update times
+            for time in st.session_state.response_data['time_data'][micro_organism.lower()]:
+
+                disease_to_times.setdefault(
+                    micro_organism, []).append(time)
+
+            # Update resistence
+            for resistence in st.session_state.response_data['resistence'][micro_organism.lower()]:
+
+                disease_to_resistence.setdefault(
+                    micro_organism, []).append(resistence)
+
         st.balloons()
 
         # Create dynamic tabs based on diseases
@@ -96,41 +117,40 @@ def results_page():
                 dash.Item('third_item', 1, 1, 2, 2),
             ]
             with dash.Grid(layout):
-                with mui.Box(sx={"height": 500, 'border': '1px dashed grey'}, key="Second_Item"):
+                with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="first_item"):
                     st.write(f"Results from Query with {bacteria}:")
-                    
+
                     # Create Tabs dynamically
                     if 'active_tab' not in st.session_state:
                         st.session_state['active_tab'] = 0
 
                     # Create Tabs dynamically
-                    with mui.Tabs(variant='scrollable',value=st.session_state['active_tab'], onChange=lambda _, value: setattr(st.session_state, 'active_tab', int(value))):
-                            for index, disease in enumerate(disease_to_antibiotics.keys()):
-                                mui.Tab(label=disease, value=index)
+                    with mui.Tabs(variant='scrollable', value=st.session_state['active_tab'], onChange=lambda _, value: setattr(st.session_state, 'active_tab', int(value))):
+                        for index, disease in enumerate(disease_to_antibiotics.keys()):
+                            mui.Tab(label=disease, value=index)
 
-                        # Display content for the active tab
-                    active_disease = list(disease_to_antibiotics.keys())[st.session_state['active_tab']]
-                    for antibiotic in disease_to_antibiotics[active_disease]:
-                        mui.Typography(antibiotic)
+                            # Display content for the active tab
+                    active_disease = list(disease_to_antibiotics.keys())[
+                        st.session_state['active_tab']]
+                    # Scrollable container for antibiotics
+                    with mui.Box(sx={"maxHeight": 300, "overflow": "auto"}):
+                        if active_disease in disease_to_times:
+                            oldest_time = disease_to_times[active_disease][0]
+                            latest_time = disease_to_times[active_disease][1]
+                            time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
+                        else:
+                            time_str = ""
+                            print(
+                                f"Warning: {active_disease} not in disease_to_times")
 
-                    # Display content for the active tab
-                    print(st.session_state['active_tab'])
-                    active_disease = list(disease_to_antibiotics.keys())[st.session_state['active_tab']]
-                    for antibiotic in disease_to_antibiotics[active_disease]:
-                        mui.Typography(antibiotic)
-        # Rest of your code for pie chart...
+                        for antibiotic in disease_to_antibiotics[active_disease]:
+                            mui.Typography(antibiotic + time_str)
 
+                    # Display the oldest and latest times
 
-            diseases = meds['ds_micro_organismo'].value_counts()
-
-            DATA = [
-                {'id': disease, 'value': count}
-                for disease, count in diseases.items()
-            ]
-
-            with mui.Box(sx={"height": 500}, key="first_item"):
+                with mui.Box(sx={"height": 500}, key="second_item"):
                     nivo.Pie(
-                        data=DATA,
+                        data=Pie_Data,
                         margin={"top": 40, "right": 80,
                                 "bottom": 80, "left": 80},
                         innerRadius=0.5,
@@ -200,6 +220,118 @@ def results_page():
                         ]
                     )
 
+                with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="third_item"):
+                    st.write(f"Results from Query with {bacteria}:")
+
+                    # Create Tabs dynamically
+                    if 'active_tab' not in st.session_state:
+                        st.session_state['active_tab'] = 0
+
+                    # Create Tabs dynamically
+                    with mui.Tabs(variant='scrollable', value=st.session_state['active_tab'], onChange=lambda _, value: setattr(st.session_state, 'active_tab', int(value))):
+                        for index, disease in enumerate(disease_to_antibiotics.keys()):
+                            mui.Tab(label=disease, value=index)
+
+                            # Display content for the active tab
+                    active_disease = list(disease_to_antibiotics.keys())[
+                        st.session_state['active_tab']]
+                    positive_resistence = 0
+                    negative_resistence = 0
+
+                    if active_disease in disease_to_times:
+                        oldest_time = disease_to_times[active_disease][0]
+                        latest_time = disease_to_times[active_disease][1]
+                        time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
+                    else:
+                        time_str = ""
+                        print(
+                            f"Warning: {active_disease} not in disease_to_times")
+
+                    # Calculate resistance data
+                    for item in disease_to_resistence.get(active_disease, []):
+                        if item == 'POSITIVO':
+                            positive_resistence += 1
+                        else:
+                            negative_resistence += 1
+
+                    res_data = [
+                        {'id': 'POSITIVO', 'value': positive_resistence}]
+                    if negative_resistence > 0:
+                        res_data.append(
+                            {'id': 'NEGATIVO', 'value': negative_resistence})
+                    nivo.Pie(
+                        data=res_data,
+                        margin={"top": 40, "right": 80,
+                                "bottom": 80, "left": 80},
+                        innerRadius=0.5,
+                        padAngle=0.7,
+                        cornerRadius=3,
+                        activeOuterRadiusOffset=8,
+                        borderWidth=1,
+                        borderColor={"from": "color",
+                                     "modifiers": [["darker", 0.2]]},
+                        arcLinkLabelsSkipAngle=10,
+                        arcLinkLabelsTextColor="#333333",
+                        arcLinkLabelsThickness=2,
+                        arcLinkLabelsColor={"from": "color"},
+                        arcLabelsSkipAngle=10,
+                        arcLabelsTextColor={"from": "color",
+                                            "modifiers": [["darker", 2]]},
+                        defs=[
+                            {
+                                "id": "dots",
+                                "type": "patternDots",
+                                "background": "inherit",
+                                "color": "rgba(255, 255, 255, 0.3)",
+                                "size": 4,
+                                "padding": 1,
+                                "stagger": True
+                            },
+                            {
+                                "id": "lines",
+                                "type": "patternLines",
+                                "background": "inherit",
+                                "color": "rgba(255, 255, 255, 0.3)",
+                                "rotation": -45,
+                                "lineWidth": 6,
+                                "spacing": 10
+                            }
+                        ],
+                        fill=[
+
+                            {'match': {'id': name}, 'id': random.choice(
+                                ["dots", "lines", ''])}
+                            for name in diseases.keys()
+                        ],
+                        legends=[
+                            {
+                                "anchor": "bottom",
+                                "direction": "row",
+                                "justify": False,
+                                "translateX": 0,
+                                "translateY": 56,
+                                "itemsSpacing": 0,
+                                "itemWidth": 100,
+                                "itemHeight": 18,
+                                "itemTextColor": "#999",
+                                "itemDirection": "left-to-right",
+                                "itemOpacity": 1,
+                                "symbolSize": 18,
+                                "symbolShape": "circle",
+                                "effects": [
+                                    {
+                                        "on": "hover",
+                                        "style": {
+                                            "itemTextColor": "#000"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    )
+
+                    # Display the oldest and latest times
+
     else:
         st.error("No results received or error in backend")
 
@@ -223,6 +355,10 @@ if __name__ == "__main__":
 bater numero de resultados que deram positivo com os resultados que deram negativo
 Gera porcentagem de resistencia
     -> Ver se o antibiotico mudou conforme o tempo para dar mais certeza a resistencia
+DONE !!!!!!!
+    -> All the tabs have the same pointer, so when you click on one, the others change as well
+              -> To change this: create a new variable as the pointer for each box
+Good night!!
 
 Para tempo, filtrar resultados para somente aqueles dentro do tempo selecionado
 

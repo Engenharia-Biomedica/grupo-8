@@ -4,6 +4,7 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from thefuzz import fuzz, process
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:8501"}})
@@ -57,23 +58,36 @@ def predict():
         bacteria = data['bacteria']
 
         results = []
+        time_data = {}
+        resistence = {}
         matches = find_matches(meds, bacteria)
 
-        for i in range(len(matches)):
-            # Extracting antibiotic and micro_organism for each match
-            antibiotic = meds['ds_antibiotico_microorganismo'].iloc[matches[i][1]]
-            micro_organism = meds['ds_micro_organismo'].iloc[matches[i][1]]
+        for match in matches:
+            disease, row_index = match
+            antibiotic = meds['ds_antibiotico_microorganismo'].iloc[row_index]
+            micro_organism = meds['ds_micro_organismo'].iloc[row_index]
+            Res1 = meds['ic_crescimento_microorganismo'].iloc[row_index]
 
-            # Check for non-null values and append to results
+            # Check for non-null values and append to results (for disease, not time nor resistence)
             if pd.notna(antibiotic) and pd.notna(micro_organism):
                 result = (antibiotic, micro_organism)
                 results.append(result)
 
+                # Collect time data for each disease ( for time)
+                time_str = meds['dh_ultima_atualizacao'].iloc[row_index]
+                time_data.setdefault(disease, []).append(
+                    datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f'))
+
+                # Resistence tiem
+                if pd.notna(Res1):
+                    resistence.setdefault(disease, []).append(Res1)
+
         # Remove duplicates from results
         results = list(set(results))
-
-        return jsonify({'results': results}), 200
-
+        oldest_latest_times = {disease: (min(times), max(
+            times)) for disease, times in time_data.items()}
+        print(oldest_latest_times)
+        return jsonify({'results': results, 'time_data': oldest_latest_times, 'resistence': resistence}), 200
     else:
         return 'Request was not JSON', 415
 
