@@ -61,12 +61,12 @@ def predict():
         time_data = {}
         resistence = {}
         matches = find_matches(meds, bacteria)
+        print(matches)
 
         for match in matches:
             disease, row_index = match
             antibiotic = meds['ds_antibiotico_microorganismo'].iloc[row_index]
             micro_organism = meds['ds_micro_organismo'].iloc[row_index]
-            Res1 = meds['ic_crescimento_microorganismo'].iloc[row_index]
 
             # Check for non-null values and append to results (for disease, not time nor resistence)
             if pd.notna(antibiotic) and pd.notna(micro_organism):
@@ -79,15 +79,13 @@ def predict():
                     datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f'))
 
                 # Resistence tiem
-                if pd.notna(Res1):
-                    resistence.setdefault(disease, []).append(Res1)
 
         # Remove duplicates from results
         results = list(set(results))
         oldest_latest_times = {disease: (min(times), max(
             times)) for disease, times in time_data.items()}
         print(oldest_latest_times)
-        return jsonify({'results': results, 'time_data': oldest_latest_times, 'resistence': resistence}), 200
+        return jsonify({'results': results, 'time_data': oldest_latest_times}), 200
     else:
         return 'Request was not JSON', 415
 
