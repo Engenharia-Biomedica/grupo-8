@@ -21,11 +21,26 @@ except AttributeError:
 
 
 @st.cache_data
-def create_data(results, times):
+def load_data(type, path):
+    match type:
+        case 'csv':
+            return pd.read_csv(path, sep=',')
+        case 'xlsx':
+            return pd.read_excel(path)
+        case 'excel':
+            return pd.read_excel(path)
+
+
+meds = load_data('csv', 'static\sample_data_clean.csv')
+
+
+@st.cache_data
+def create_data(results, times, meds):
 
     raw_data = []
     disease_to_antibiotics = {}
     disease_to_times = {}
+    antibiotics_to_times = {}
 
     for result in results:
         antibiotic, micro_organism = result
@@ -36,30 +51,33 @@ def create_data(results, times):
 
         # Update times
         for time in times[micro_organism.lower()]:
-
             disease_to_times.setdefault(
                 micro_organism, []).append(time)
+
+        for antibiotic in set([result[0] for result in results]):
+            matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
+            times_list = [datetime.strptime(row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
+                          for _, row in matching_rows.iterrows() if pd.notnull(row['dh_ultima_atualizacao'])]
+
+            if times_list:
+                oldest_time = min(times_list)
+                latest_time = max(times_list)
+                antibiotics_to_times[antibiotic] = (oldest_time, latest_time)
+            else:
+                print(f"No valid time data for antibiotic: {antibiotic}")
 
     # Iterate over diseases and their corresponding antibiotics
     for disease, antibiotics in disease_to_antibiotics.items():
         # Iterate over the antibiotics for the current disease
         for antibiotic in antibiotics:
-            for row, index in meds.iterrows():
-                if meds['ds_antibiotico_microorganismo'].iloc[row] == antibiotic:
-                    raw_data.append([disease, antibiotic, meds['ic_crescimento_microorganismo'].iloc[row],
-                                     datetime.strptime(
-                        meds['dh_ultima_atualizacao'].iloc[row], '%Y-%m-%d %H:%M:%S.%f'),
-                        row, meds['id_prontuario'].iloc[row]])
-            for i, item in enumerate(raw_data):
-                if i + 1 < len(raw_data):
-                    if raw_data[i][3] - raw_data[i + 1][3] > timedelta(days=7) and raw_data[i][5] == raw_data[i + 1][5]:
-                        raw_data.remove(item)
+            matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
+            for _, row in matching_rows.iterrows():
+                update_time = datetime.strptime(
+                    row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
+                raw_data.append(
+                    [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario']])
 
-    oldest_time = datetime.strptime(
-        min([min(times) for times in disease_to_times.values()]), '%a, %d %b %Y %H:%M:%S GMT')
-    latest_time = datetime.strptime(
-        max([max(times) for times in disease_to_times.values()]), '%a, %d %b %Y %H:%M:%S GMT')
-    return raw_data, disease_to_antibiotics, disease_to_times, oldest_time, latest_time
+    return raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time
 
 
 def create_list_item(antibiotic, time_string):
@@ -164,8 +182,8 @@ def results_page():
             st.error("No results found")
             return
 
-        raw_data, disease_to_antibiotics, disease_to_times, oldest_time, latest_time = create_data(
-            st.session_state.response_data['results'], st.session_state.response_data['time_data'])
+        raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time = create_data(
+            st.session_state.response_data['results'], st.session_state.response_data['time_data'], meds)
 
       # Initialize the new dictionary
 
@@ -206,33 +224,44 @@ def results_page():
                             st.session_state['active_tab']]
                         # Scrollable container for antibiotics
                         with mui.Box(sx={"overflow": "auto"}):
-                            if active_disease in disease_to_times:
-                                oldest_time = disease_to_times[active_disease][0]
-                                latest_time = disease_to_times[active_disease][1]
-                                time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
-                            else:
-                                time_str = ""
-                                print(
-                                    f"Warning: {active_disease} not in disease_to_times")
-
-                            with mui.List():
+                            if active_disease in disease_to_antibiotics:
                                 for antibiotic in disease_to_antibiotics[active_disease]:
-                                    list_item = create_list_item(
-                                        antibiotic, time_str)
-                                    with list_item:
-                                        mui.ListItemText(primary=antibiotic)
+                                    # Check if the antibiotic has time data in antibiotics_to_times
+                                    if antibiotic in antibiotics_to_times:
+                                        # Extract oldest and latest times for this antibiotic
+                                        oldest_time, latest_time = antibiotics_to_times[antibiotic]
+                                        time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
+
+                                        # Compare with the slider value
+                                        if oldest_time >= slider_value:
+                                            list_item = create_list_item(
+                                                antibiotic, time_str)
+                                            with list_item:
+                                                mui.ListItemText(
+                                                    primary=antibiotic)
+                                    else:
+                                        print(
+                                            f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
 
-                        diseases = meds['ds_micro_organismo'].value_counts()
+                        filtered_diseases = {}
 
+                        for _, row in meds.iterrows():
+                            disease = row['ds_micro_organismo']
+                            update_time = datetime.strptime(
+                                row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
+
+                            if update_time >= slider_value:
+                                filtered_diseases[disease] = filtered_diseases.get(
+                                    disease, 0) + 1
+
+    # Create Pie Data outside the loop
                         Pie_Data = [
                             {'id': disease, 'value': count}
-                            for disease, count in diseases.items()
+                            for disease, count in filtered_diseases.items() if count > 0
                         ]
-                        for values in Pie_Data:
-                            if values['value'] == 0:
-                                Pie_Data.remove(values)
+
                         if len(Pie_Data) == 0:
                             Pie_Data = [{'id': 'Nenhum', 'value': 1}]
 
@@ -278,7 +307,7 @@ def results_page():
 
                                 {'match': {'id': name}, 'id': random.choice(
                                     ["dots", "lines", ''])}
-                                for name in diseases.keys()
+                                for name in filtered_diseases.items()
                             ],
                             legends=[
                                 {
@@ -388,7 +417,7 @@ def results_page():
 
                                 {'match': {'id': name}, 'id': random.choice(
                                     ["dots", "lines", ''])}
-                                for name in diseases.keys()
+                                for name in filtered_diseases.items()
                             ],
                             legends=[
                                 {
@@ -424,7 +453,6 @@ def results_page():
 
 
 def main():
-
     if 'page' not in st.session_state:
         st.session_state['page'] = 'search'
 
@@ -439,9 +467,6 @@ if __name__ == "__main__":
 
 
 '''
-
-
-New page for when you click on a result( maybe?)
     -> All the tabs have the same pointer, so when you click on one, the others change as well
               -> To change this: create a new variable as the pointer for each box
 
@@ -451,9 +476,10 @@ Graficos de dentro do Einstein cm mais csa
          -> Pega so os dados que aconteceram dentro do Einstein
 antibioticos prescritos com base no prontuario
 
-
 sensiel resistente para monitorar resistencia
        -> Ta na tabela?
+       
+Adicionar resistencia a um dado antibiotico, nao geral
        
 
 '''
