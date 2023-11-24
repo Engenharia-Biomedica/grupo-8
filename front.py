@@ -11,13 +11,12 @@ from datetime import datetime
 
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 try:
-    st.session_state.time
+    print(st.session_state.time)
     if type(st.session_state.time) == datetime:
-        print('fuck yeah')
+        pass
     else:
         st.session_state.time = datetime.now()
 except AttributeError:
-    print('fuck no')
     st.session_state.time = datetime.now()
 
 
@@ -54,23 +53,41 @@ def on_send_button_clicked():
 def on_go_back_button_clicked():
     st.session_state.page = 'search'
     st.session_state['active_tab'] = 0
+    st.session_state.bacteria = None
+
 
 
 def search_page():
-    # Inject custom CSS
-    st.markdown("""
-        <style>
-        .my-custom-style {
-            color: red;
-            font-size: 20px;
-            /* other CSS properties */
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    html.html('''
+    <style>
+    .image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120px;
+    height: 120px;
+    margin:-60px 0 0 -60px;
+    -webkit-animation:spin 4s linear infinite;
+    -moz-animation:spin 4s linear infinite;
+    animation:spin 4s linear infinite;
+}
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+              </style>
 
-    # Use the custom style in a markdown
-    st.markdown('<img class="my-custom-style" src="/static/imgs/jpg2png.png"></img>',
-                unsafe_allow_html=True)
+    <img class="image" src="https://dinizismo.s3.sa-east-1.amazonaws.com/img.jpg" alt="" width="120" height="120">
+
+
+
+
+
+'''
+
+
+
+    )
+
     st.title("buscador de antibioticos da Lilica")
 
     st.session_state.bacteria = st.text_input(
@@ -83,18 +100,12 @@ def search_page():
 def results_page():
     global bacteria
     bacteria = st.session_state.bacteria
-    st.session_state.bacteria = None
     st.button("Go back to Search", on_click=on_go_back_button_clicked)
     if 'response_data' in st.session_state and st.session_state.response_data:
         if st.session_state.response_data['results'] == []:
             st.error("No results found")
             return
 
-        diseases = meds['ds_micro_organismo'].value_counts()
-        Pie_Data = [
-            {'id': disease, 'value': count}
-            for disease, count in diseases.items()
-        ]
         disease_to_antibiotics = {}
         disease_to_times = {}
         disease_to_resistence = {}
@@ -135,13 +146,13 @@ def results_page():
             with elements("nivo_charts"):
 
                 layout = [
-                    dash.Item('first_item', 0, 0, 2, 2),
-                    dash.Item('second_item', 0, 2, 2, 2),
-                    dash.Item('third_item', 1, 1, 2, 2),
+                    dash.Item('results', 0, 0, 2, 2),
+                    dash.Item('graphs', 0, 2, 2, 2),
+                    dash.Item('res_graph', 1, 1, 2, 2),
                 ]
 
                 with dash.Grid(layout):
-                    with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="first_item"):
+                    with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
                         st.write(f"Results from Query with {bacteria}:")
 
                         # Create Tabs dynamically
@@ -170,11 +181,26 @@ def results_page():
                             for antibiotic in disease_to_antibiotics[active_disease]:
                                 if datetime.strptime(disease_to_times[active_disease][1], '%a, %d %b %Y %H:%M:%S GMT') < slider_value:
                                     continue
-                                mui.Typography(antibiotic + time_str)
+                                mui.List(sx= antibiotic + time_str)
 
                         # Display the oldest and latest times
 
-                    with mui.Box(sx={"height": 500}, key="second_item"):
+                    with mui.Box(sx={"height": 500}, key="graphs"):
+
+                        diseases = meds['ds_micro_organismo'].value_counts()
+                
+                          
+                        Pie_Data = [
+                            {'id': disease, 'value': count}
+                            for disease, count in diseases.items()
+                        ]
+                        for values in Pie_Data:
+                            if values['value'] == 0:
+                                Pie_Data.remove(values)
+                        if len(Pie_Data) == 0:
+                            Pie_Data = [{'id': 'Nenhum', 'value': 1}]
+       
+       
                         nivo.Pie(
                             data=Pie_Data,
                             margin={"top": 40, "right": 80,
@@ -246,8 +272,8 @@ def results_page():
                             ]
                         )
 
-                    with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="third_item"):
-                        st.write(f"Results from Query with {bacteria}:")
+                    with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="res_graph"):
+                        
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -363,7 +389,7 @@ def results_page():
 
 
 def main():
-
+   
     if 'page' not in st.session_state:
         st.session_state['page'] = 'search'
 
@@ -386,5 +412,10 @@ Para tempo, filtrar resultados para somente aqueles dentro do tempo selecionado
 Graficos de dentro do Einstein cm mais csa
          -> Pega so os dados que aconteceram dentro do Einstein
 antibioticos prescritos com base no prontuario
+
+
+sensiel resistente para monitorar resistencia
+       -> Ta na tabela?
+       
 
 '''
