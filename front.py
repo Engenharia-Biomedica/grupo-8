@@ -41,6 +41,7 @@ def create_data(results, times, meds):
     disease_to_antibiotics = {}
     disease_to_times = {}
     antibiotics_to_times = {}
+    sensitivity = {}
 
     for result in results:
         antibiotic, micro_organism = result
@@ -68,6 +69,12 @@ def create_data(results, times, meds):
 
     # Iterate over diseases and their corresponding antibiotics
     for disease, antibiotics in disease_to_antibiotics.items():
+        #now for the sensible stuff:
+        for antibiotic in antibiotics:
+            matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
+            for _, row in matching_rows.iterrows():
+                sensitivity[antibiotic] = meds['cd_interpretacao_antibiograma'].value_counts().to_dict()
+            
         # Iterate over the antibiotics for the current disease
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
@@ -76,8 +83,12 @@ def create_data(results, times, meds):
                     row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
                 raw_data.append(
                     [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario']])
+                
 
-    return raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time
+
+                
+
+    return raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity
 
 
 def create_list_item(antibiotic, time_string):
@@ -182,7 +193,7 @@ def results_page():
             st.error("No results found")
             return
 
-        raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time = create_data(
+        raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity = create_data(
             st.session_state.response_data['results'], st.session_state.response_data['time_data'], meds)
 
       # Initialize the new dictionary
@@ -204,6 +215,7 @@ def results_page():
                     dash.Item('results', 0, 0, 2, 2),
                     dash.Item('graphs', 0, 2, 2, 2),
                     dash.Item('res_graph', 1, 1, 2, 2),
+                    dash.Item('sens_graph', 1,2,2,2),
                 ]
 
                 with dash.Grid(layout):
@@ -447,6 +459,96 @@ def results_page():
                         )
 
                         # Display the oldest and latest times
+
+                    with mui.Box(sx={'height': 500}, key='sens_graph'):
+                        if 'active_tab_antibiotic' not in st.session_state:
+                            st.session_state['active_tab_antibiotic'] = 0
+
+                        # Create Tabs dynamically
+                        with mui.Tabs(variant='scrollable', value=st.session_state['active_tab_antibiotic'], onChange=lambda _, value: setattr(st.session_state, 'active_tab_antibiotic', int(value))):
+                            for index, disease in enumerate(disease_to_antibiotics.get(active_disease)):
+                                mui.Tab(label=disease, value=index)
+
+                                # Display content for the active tab
+                        active_antibiotic = list(disease_to_antibiotics.get(active_disease))[
+                            st.session_state['active_tab_antibiotic']]
+
+                       
+                        sens_data = [{'id': resistance, 'value': count} for resistance, count in sensitivity[antibiotic].items()]
+                        print(disease_to_antibiotics)
+
+
+                        nivo.Pie(
+                            data=sens_data,
+                            margin={"top": 40, "right": 80,
+                                    "bottom": 80, "left": 80},
+                            innerRadius=0.5,
+                            padAngle=0.7,
+                            cornerRadius=3,
+                            activeOuterRadiusOffset=8,
+                            borderWidth=1,
+                            borderColor={"from": "color",
+                                         "modifiers": [["darker", 0.2]]},
+                            arcLinkLabelsSkipAngle=10,
+                            arcLinkLabelsTextColor="#333333",
+                            arcLinkLabelsThickness=2,
+                            arcLinkLabelsColor={"from": "color"},
+                            arcLabelsSkipAngle=10,
+                            arcLabelsTextColor={"from": "color",
+                                                "modifiers": [["darker", 2]]},
+                            defs=[
+                                {
+                                    "id": "dots",
+                                    "type": "patternDots",
+                                    "background": "inherit",
+                                    "color": "rgba(255, 255, 255, 0.3)",
+                                    "size": 4,
+                                    "padding": 1,
+                                    "stagger": True
+                                },
+                                {
+                                    "id": "lines",
+                                    "type": "patternLines",
+                                    "background": "inherit",
+                                    "color": "rgba(255, 255, 255, 0.3)",
+                                    "rotation": -45,
+                                    "lineWidth": 6,
+                                    "spacing": 10
+                                }
+                            ],
+                            fill=[
+
+                                {'match': {'id': name}, 'id': random.choice(
+                                    ["dots", "lines", ''])}
+                                for name in filtered_diseases.items()
+                            ],
+                            legends=[
+                                {
+                                    "anchor": "bottom",
+                                    "direction": "row",
+                                    "justify": False,
+                                    "translateX": 0,
+                                    "translateY": 56,
+                                    "itemsSpacing": 0,
+                                    "itemWidth": 100,
+                                    "itemHeight": 18,
+                                    "itemTextColor": "#999",
+                                    "itemDirection": "left-to-right",
+                                    "itemOpacity": 1,
+                                    "symbolSize": 18,
+                                    "symbolShape": "circle",
+                                    "effects": [
+                                        {
+                                            "on": "hover",
+                                            "style": {
+                                                "itemTextColor": "#000"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        )
+
 
     else:
         st.error("No results received or error in backend")
