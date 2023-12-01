@@ -14,17 +14,15 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:8501"}})
 #Carrega dados de um CSV para um DataFrame do pandas
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 
-
+# Encontra correspondencia para um string de busca
 def find_matches(df, search_string):
-    # Convert all words to lowercase for case-insensitive comparison
+    # Converte todas as palavras para letras minusculas 
     autofill_words = df['ds_micro_organismo'].str.lower().tolist()
     raw_probable_words = process.extract(
         search_string, autofill_words, limit=5)
     query = []
     for i in range(len(raw_probable_words)):
         if raw_probable_words[i][1] >= 75:
-            if raw_probable_words[i][1] == 100:
-                print('jackpot bitches!')
             query.append(raw_probable_words[i][0])
 
     # Register words with autofill (assuming autofill expects lowercase words)
