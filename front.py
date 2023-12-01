@@ -92,7 +92,7 @@ def create_data(results, times, meds):
 
 
 def create_list_item(antibiotic, time_string):
-    """Create a list item with a button that triggers the popover."""
+    """Crie um item de lista com um botão que acionar o popover."""
     def handle_click():
         on_antibiotic_click(antibiotic, time_string)
 
@@ -122,11 +122,12 @@ def send_data_to_flask(data):
             st.error("Request failed: " + str(e))
             return None
 
-
+#A função on_send_button_clicked() é uma função de retorno de chamada (callback) que é acionada quando o botão 'Send to Flask' é clicado
 def on_send_button_clicked():
-    """Callback function for 'Send to Flask' button."""
+
+    """Chama a função do botão 'Send to Flask'."""
     if st.session_state.bacteria:
-        # Send data to Flask and update response_data in session state
+        # Envie dados para o Flask e atualize response_data no estado da sessão.
         st.session_state.response_data = send_data_to_flask(
             {"bacteria": st.session_state.bacteria})
         st.session_state.page = 'results' if st.session_state.response_data else 'search'
@@ -144,6 +145,7 @@ def on_go_back_button_clicked():
     st.session_state.bacteria = None
 
 
+#A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
 def search_page():
     html.html('''
     <style>
