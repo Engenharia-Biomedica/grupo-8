@@ -572,19 +572,7 @@ if __name__ == "__main__":
 
 
 '''
-    -> All the tabs have the same pointer, so when you click on one, the others change as well
-              -> To change this: create a new variable as the pointer for each box
-
-Para tempo, filtrar resultados para somente aqueles dentro do tempo selecionado
-
-Graficos de dentro do Einstein cm mais csa
-         -> Pega so os dados que aconteceram dentro do Einstein
-antibioticos prescritos com base no prontuario
-
-sensiel resistente para monitorar resistencia
-       -> Ta na tabela?
-       
-Adicionar resistencia a um dado antibiotico, nao geral
+   
        
 
 '''
