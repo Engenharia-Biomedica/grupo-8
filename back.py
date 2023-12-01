@@ -14,44 +14,43 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:8501"}})
 #Carrega dados de um CSV para um DataFrame do pandas
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 
-
+#Função para encontrar as palavras mais parecidas com a palavra digitada
 def find_matches(df, search_string):
-    # Convert all words to lowercase for case-insensitive comparison
+    # Converter todas as palavras em minusculo para não ter problema na ocmparação de maiuscula com minuscula
     autofill_words = df['ds_micro_organismo'].str.lower().tolist()
     raw_probable_words = process.extract(
         search_string, autofill_words, limit=5)
     query = []
+    #Palavras com maior ou igual a 75% de certeza da palavra digitada
     for i in range(len(raw_probable_words)):
         if raw_probable_words[i][1] >= 75:
-            if raw_probable_words[i][1] == 100:
-                print('jackpot bitches!')
             query.append(raw_probable_words[i][0])
 
     # Register words with autofill (assuming autofill expects lowercase words)
     autofill.register_words(autofill_words)
     lower_search_string = search_string.lower()
 
-    # Perform the search
+    # Pesquisar palavras com a palavra digitada
     if query == []:
         query = autofill.search(lower_search_string) if lower_search_string not in autofill_words else [
             lower_search_string]
 
-    # Convert the DataFrame to lowercase once
+    # Converter o Dataframe para minusculo
     lower_df = df.apply(lambda x: x.astype(str).str.lower())
 
     matches = []
     for word in query:
-        # Finding the location
+        # Achar a localização
         result = np.where(lower_df['ds_micro_organismo'] == word)
         row_indices = result[0]
 
-        # Append matches
+        # Combina bacteria com linha
         for row in row_indices:
             matches.append((word, row))
 
     return matches
 
-
+#Funcionamento do site: quando o site recebe uma mensagem, ele chama a função predict
 @app.route('/message', methods=['POST'])
 def predict():
     data = request.get_json()
@@ -70,7 +69,7 @@ def predict():
             antibiotic = meds['ds_antibiotico_microorganismo'].iloc[row_index]
             micro_organism = meds['ds_micro_organismo'].iloc[row_index]
 
-            # Check for non-null values and append to results (for disease, not time nor resistence)
+            # Checar se não tem valores nulos e adcicionar em resultados 
             if pd.notna(antibiotic) and pd.notna(micro_organism):
                 result = (antibiotic, micro_organism)
                 results.append(result)
@@ -80,9 +79,9 @@ def predict():
                 time_data.setdefault(disease, []).append(
                     datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f'))
 
-                # Resistence tiem
+        
 
-        # Remove duplicates from results
+        # Remove duplicações para o resultado
         results = list(set(results))
         oldest_latest_times = {disease: (min(times), max(
             times)) for disease, times in time_data.items()}
