@@ -475,7 +475,7 @@ def results_page():
 
                        
                         sens_data = [{'id': resistance, 'value': count} for resistance, count in sensitivity[antibiotic].items()]
-                        print(disease_to_antibiotics)
+                        print(disease_to_antibiotics[active_disease], 'aaaaaaa')
 
 
                         nivo.Pie(
