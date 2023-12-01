@@ -7,10 +7,11 @@ import numpy as np
 from thefuzz import fuzz, process
 from datetime import datetime
 
+# Cria um flask para permitir comunicacao com o site
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:8501"}})
 
-
+#Carrega dados de um CSV para um DataFrame do pandas
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 
 
