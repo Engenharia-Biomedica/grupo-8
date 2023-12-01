@@ -1,4 +1,4 @@
-#Importar bibloitcas
+#Importar bibliotecas
 import streamlit as st
 from streamlit_modal import Modal
 import streamlit.components.v1 as html
@@ -177,8 +177,7 @@ def search_page():
 
     st.title("Buscador de antibioticos Grupo 8")
 
-    st.session_state.bacteria = st.text_input
-        ("Digite o nome ou código da bactéria")
+    st.session_state.bacteria = st.text_input("Digite o nome ou código da bactéria")
 
     st.button("Send to Flask", on_click=on_send_button_clicked,
               disabled=st.session_state.bacteria == "")
