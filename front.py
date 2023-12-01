@@ -20,7 +20,7 @@ try:
 except AttributeError:
     st.session_state.time = datetime.now()
 
-
+#modificações no excel (converter de csv para xlsx)
 @st.cache_data
 def load_data(type, path):
     match type:
