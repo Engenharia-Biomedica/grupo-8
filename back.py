@@ -14,7 +14,7 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:8501"}})
 #Carrega dados de um CSV para um DataFrame do pandas
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 
-#Função para encontrar as palavras mais parecidas com a palavra digitada
+#Função para encontrar as palavras mais parecidas com a palavra digitada# Encontra correspondencia para um string de busca
 def find_matches(df, search_string):
     # Converter todas as palavras em minusculo para não ter problema na ocmparação de maiuscula com minuscula
     autofill_words = df['ds_micro_organismo'].str.lower().tolist()
