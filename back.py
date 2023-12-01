@@ -1,3 +1,4 @@
+#importar bibliotecas para funcionar o programa
 from flask import Flask, render_template, jsonify, request
 from autofill import autofill
 from flask_cors import CORS
