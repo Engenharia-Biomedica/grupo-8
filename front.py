@@ -36,6 +36,7 @@ meds = load_data('csv', 'static\sample_data_clean.csv')
 
 
 @st.cache_data
+#função para criar e organizar dados relacionados a doenças, antibióticos e horários
 def create_data(results, times, meds):
 
     raw_data = []
@@ -68,18 +69,17 @@ def create_data(results, times, meds):
             else:
                 print(f"No valid time data for antibiotic: {antibiotic}")
 
-    # Iterate over diseases and their corresponding antibiotics
+    # Relacionar doenças com seus antibióticos correspondentes: 
     for disease, antibiotics in disease_to_antibiotics.items():
-        # now for the sensible stuff:
-        # now for the sensible stuff:
+        #para o sensível:
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             # Calculate sensitivity data for each antibiotic
             antibiotic_sensitivity = matching_rows['cd_interpretacao_antibiograma'].value_counts(
             ).to_dict()
-            # Store the sensitivity data uniquely for each antibiotic
+            # Cada antibiótico tera sua propria dado de resistencia. Isso está sendo salvo em uma um dicionário (sensitivity)
             sensitivity[antibiotic] = antibiotic_sensitivity
-            # Iterate over the antibiotics for the current disease
+            # Relacionar os antibioticos com as seus respectivos antibióticos
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             for _, row in matching_rows.iterrows():
