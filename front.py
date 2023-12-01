@@ -69,13 +69,16 @@ def create_data(results, times, meds):
 
     # Iterate over diseases and their corresponding antibiotics
     for disease, antibiotics in disease_to_antibiotics.items():
-        #now for the sensible stuff:
+        # now for the sensible stuff:
+        # now for the sensible stuff:
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
-            for _, row in matching_rows.iterrows():
-                sensitivity[antibiotic] = meds['cd_interpretacao_antibiograma'].value_counts().to_dict()
-            
-        # Iterate over the antibiotics for the current disease
+            # Calculate sensitivity data for each antibiotic
+            antibiotic_sensitivity = matching_rows['cd_interpretacao_antibiograma'].value_counts(
+            ).to_dict()
+            # Store the sensitivity data uniquely for each antibiotic
+            sensitivity[antibiotic] = antibiotic_sensitivity
+            # Iterate over the antibiotics for the current disease
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             for _, row in matching_rows.iterrows():
@@ -83,10 +86,6 @@ def create_data(results, times, meds):
                     row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
                 raw_data.append(
                     [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario']])
-                
-
-
-                
 
     return raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity
 
@@ -215,7 +214,7 @@ def results_page():
                     dash.Item('results', 0, 0, 2, 2),
                     dash.Item('graphs', 0, 2, 2, 2),
                     dash.Item('res_graph', 1, 1, 2, 2),
-                    dash.Item('sens_graph', 1,2,2,2),
+                    dash.Item('sens_graph', 1, 2, 2, 2),
                 ]
 
                 with dash.Grid(layout):
@@ -464,13 +463,18 @@ def results_page():
                         if 'active_tab_antibiotic' not in st.session_state:
                             st.session_state['active_tab_antibiotic'] = 0
 
-                        # Create Tabs dynamically
-                        with mui.Tabs(variant='scrollable', value=st.session_state['active_tab_antibiotic'], onChange=lambda _, value: setattr(st.session_state, 'active_tab_antibiotic', int(value))):
-                            for index, disease in enumerate(disease_to_antibiotics.get(active_disease)):
-                                mui.Tab(label=disease, value=index)
+                    # Create Tabs dynamically
+                        with mui.Tabs(
+                            variant='scrollable',
+                            value=st.session_state['active_tab_antibiotic'],
+                            onChange=lambda _, value: setattr(
+                                st.session_state, 'active_tab_antibiotic', int(value))
+                        ):
+                            for index, antibiotic in enumerate(disease_to_antibiotics[active_disease]):
+                                mui.Tab(label=antibiotic, value=index)
 
-                                # Display content for the active tab
-                        active_antibiotic = list(disease_to_antibiotics.get(active_disease))[
+                        # Determine the active antibiotic based on the selected tab
+                        active_antibiotic = disease_to_antibiotics[active_disease][
                             st.session_state['active_tab_antibiotic']]
 
                        
@@ -548,7 +552,6 @@ def results_page():
                                 }
                             ]
                         )
-
 
     else:
         st.error("No results received or error in backend")
