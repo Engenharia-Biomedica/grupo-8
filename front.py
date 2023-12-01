@@ -174,10 +174,10 @@ def search_page():
 
               )
 
-    st.title("buscador de antibioticos da Lilica")
+    st.title("Buscador de antibioticos Grupo 8")
 
-    st.session_state.bacteria = st.text_input(
-        "Enter the name or code of the bacteria")
+    st.session_state.bacteria = st.text_input
+        ("Digite o nome ou código da bactéria")
 
     st.button("Send to Flask", on_click=on_send_button_clicked,
               disabled=st.session_state.bacteria == "")
