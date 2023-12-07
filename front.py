@@ -36,7 +36,7 @@ meds = load_data('csv', 'static\sample_data_clean.csv')
 
 
 @st.cache_data
-#função para criar e organizar dados relacionados a doenças, antibióticos e horários
+
 def create_data(results, times, meds):
 
     raw_data = []
@@ -215,8 +215,8 @@ def results_page():
                 layout = [
                     dash.Item('results', 0, 0, 2, 2, isDraggable=False),
                     dash.Item('graphs', 0, 1, 2, 2,isDraggable=False),
-                    dash.Item('res_graph', 1, 0, 3, 2,isDraggable=False),
-                    dash.Item('sens_graph', 1, 1, 3, 2,isDraggable=False),
+                    dash.Item('res_graph', 1, 0, 1, 2,isDraggable=False),
+                    dash.Item('sens_graph', 1, 1, 1, 2,isDraggable=False),
                 ]
 
                 with dash.Grid(layout):
