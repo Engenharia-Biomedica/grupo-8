@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import random
 from datetime import datetime, timedelta
-#caio nao fez nada
+#caio nao fez nada j
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 try:
     print(st.session_state.time)
