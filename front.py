@@ -185,7 +185,7 @@ def search_page():
     st.session_state.bacteria = st.text_input(
         "Digite o nome ou código da bactéria")
 
-    st.button("Send to Flask", on_click=on_send_button_clicked,
+    st.button("Clique para pesquisar", on_click=on_send_button_clicked,
               disabled=st.session_state.bacteria == "")
 
 
@@ -256,7 +256,7 @@ def results_page():
 
                 with dash.Grid(layout):
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
-                        st.write(f"Resultados da consulta para: {bacteria}:")
+                        st.write(f"Resultados da consulta para {bacteria}:")
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -296,6 +296,7 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
+                        mui.Typography('Gráfico 1')
 
                         filtered_diseases = {}
 
@@ -390,6 +391,7 @@ def results_page():
                         )
 
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="res_graph"):
+                        mui.Typography('Gráfico de Resistência')
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -505,6 +507,7 @@ def results_page():
                         # Display the oldest and latest times
 
                     with mui.Box(sx={'height': 500}, key='sens_graph'):
+                        mui.Typography('Gráfico de Sensibilidade')
                         if 'active_tab_antibiotic' not in st.session_state:
                             st.session_state['active_tab_antibiotic'] = 0
 
