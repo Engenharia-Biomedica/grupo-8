@@ -147,7 +147,31 @@ def on_go_back_button_clicked():
 
 #A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
 def search_page():
-    st.image('static\imgs\hiae-logo-v2.jpg')
+    html.html('''
+    <style>
+    .image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin:-60px 0 0 -60px;
+    margin-left: -160px;
+ 
+}
+
+              </style>
+
+    <img class="image" src="https://dinizismo.s3.sa-east-1.amazonaws.com/Untitled.jpg" alt="">
+
+
+
+
+
+'''
+
+
+
+)
+
     st.title("Rastreador de dados para tratamento com antibióticos")
 
     st.session_state.bacteria = st.text_input("Digite o nome ou código da bactéria")
