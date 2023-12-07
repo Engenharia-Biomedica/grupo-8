@@ -143,7 +143,7 @@ def on_go_back_button_clicked():
     st.session_state.page = 'search'
     st.session_state['active_tab'] = 0
     st.session_state.bacteria = None
-
+ 
 
 #A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
 def search_page():
