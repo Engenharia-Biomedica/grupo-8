@@ -147,37 +147,8 @@ def on_go_back_button_clicked():
 
 #A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
 def search_page():
-    html.html('''
-    <style>
-    .image {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 120px;
-    height: 120px;
-    margin:-60px 0 0 -60px;
-    -webkit-animation:spin 4s linear infinite;
-    -moz-animation:spin 4s linear infinite;
-    animation:spin 4s linear infinite;
-}
-@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
-@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
-@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
-              </style>
-
-    <img class="image" src="https://dinizismo.s3.sa-east-1.amazonaws.com/img.jpg" alt="" width="120" height="120">
-
-
-
-
-
-'''
-
-
-
-              )
-
-    st.title("Buscador de antibioticos Grupo 8")
+    st.image('static\imgs\hiae-logo-v2.jpg')
+    st.title("Rastreador de dados para tratamento com antibióticos")
 
     st.session_state.bacteria = st.text_input("Digite o nome ou código da bactéria")
 
@@ -213,11 +184,11 @@ def results_page():
             with elements("nivo_charts"):
 
                 layout = [
-                    dash.Item('results', 0, 0, 2, 2, isDraggable=False),
-                    dash.Item('graphs', 0, 1, 2, 2,isDraggable=False),
-                    dash.Item('res_graph', 1, 0, 2, 2,isDraggable=False),
-                    dash.Item('sens_graph', 1, 1, 2, 2,isDraggable=False),
-                ]
+    dash.Item('results', 0, 0, 4, 2, isDraggable=False),
+    dash.Item('graphs', 0, 1, 5, 3,isDraggable=False),
+    dash.Item('res_graph', 1, 0, 4, 4,isDraggable=False),
+    dash.Item('sens_graph', 1, 1, 4, 4,isDraggable=False),  # Altere a posição para (1, 1)
+]
 
                 with dash.Grid(layout):
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
