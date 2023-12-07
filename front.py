@@ -175,7 +175,7 @@ def search_page():
 
 )
 
-    st.title("Rastreador de dados para tratamento com antibióticos")
+    st.header("Rastreador de dados para tratamento com antibióticos")
 
     st.session_state.bacteria = st.text_input("Digite o nome ou código da bactéria")
 
