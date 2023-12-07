@@ -154,8 +154,10 @@ def search_page():
     top: 50%;
     left: 50%;
     height: 120px;
+    height: auto;
     margin:-60px 0 0 -60px;
     margin-left: -110px;
+    width: 235px;
  
 }
 
