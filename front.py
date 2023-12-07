@@ -1,4 +1,4 @@
-#Importar bibliotecas
+# Importar bibliotecas
 import streamlit as st
 from streamlit_modal import Modal
 import streamlit.components.v1 as html
@@ -20,7 +20,9 @@ try:
 except AttributeError:
     st.session_state.time = datetime.now()
 
-#modificações no excel (converter de csv para xlsx)
+# modificações no excel (converter de csv para xlsx)
+
+
 @st.cache_data
 def load_data(type, path):
     match type:
@@ -36,7 +38,6 @@ meds = load_data('csv', 'static\sample_data_clean.csv')
 
 
 @st.cache_data
-
 def create_data(results, times, meds):
 
     raw_data = []
@@ -45,48 +46,51 @@ def create_data(results, times, meds):
     antibiotics_to_times = {}
     sensitivity = {}
 
-    for result in results:
-        antibiotic, micro_organism = result
-
-        # Update antibiotics
+    # Process each result
+    for antibiotic, micro_organism in results:
+        # Update antibiotics mapping
         disease_to_antibiotics.setdefault(
             micro_organism, []).append(antibiotic)
 
         # Update times
-        for time in times[micro_organism.lower()]:
-            disease_to_times.setdefault(
-                micro_organism, []).append(time)
+        for time in times.get(micro_organism.lower(), []):
+            disease_to_times.setdefault(micro_organism, []).append(time)
 
-        for antibiotic in set([result[0] for result in results]):
-            matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
-            times_list = [datetime.strptime(row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
-                          for _, row in matching_rows.iterrows() if pd.notnull(row['dh_ultima_atualizacao'])]
+    unique_antibiotics = set(antibiotic for antibiotic, _ in results)
+    for antibiotic in unique_antibiotics:
+        matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
+        times_list = pd.to_datetime(
+            matching_rows['dh_ultima_atualizacao'].dropna(), format='%Y-%m-%d %H:%M:%S.%f')
 
-            if times_list:
-                oldest_time = min(times_list)
-                latest_time = max(times_list)
-                antibiotics_to_times[antibiotic] = (oldest_time, latest_time)
-            else:
-                print(f"No valid time data for antibiotic: {antibiotic}")
+        if not times_list.empty:
+            antibiotics_to_times[antibiotic] = (
+                times_list.min().to_pydatetime(), times_list.max().to_pydatetime())
+            oldest_time = times_list.min().to_pydatetime()
+        else:
+            print(f"No valid time data for antibiotic: {antibiotic}")
 
-    # Relacionar doenças com seus antibióticos correspondentes: 
+    # Relacionar doenças com seus antibióticos correspondentes:
     for disease, antibiotics in disease_to_antibiotics.items():
-        #para o sensível:
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             # Calculate sensitivity data for each antibiotic
-            antibiotic_sensitivity = matching_rows['cd_interpretacao_antibiograma'].value_counts(
+            sensitivity[antibiotic] = matching_rows['cd_interpretacao_antibiograma'].value_counts(
             ).to_dict()
-            # Cada antibiótico tera sua propria dado de resistencia. Isso está sendo salvo em uma um dicionário (sensitivity)
-            sensitivity[antibiotic] = antibiotic_sensitivity
             # Relacionar os antibioticos com as seus respectivos antibióticos
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             for _, row in matching_rows.iterrows():
+                local = row['ds_local_coleta'] if pd.notna(
+                    row['ds_local_coleta']) else 'Nenhum'
+                encontro = row['ds_tipo_encontro'] if pd.notna(
+                    row['ds_tipo_encontro']) else 'Nenhum'
+                exame = row['ds_exame_millennium'] if pd.notna(
+                    row['ds_exame_millennium']) else 'Nenhum'
+
                 update_time = datetime.strptime(
                     row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
                 raw_data.append(
-                    [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario']])
+                    [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario'], local, encontro, exame])
 
     return raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity
 
@@ -122,9 +126,10 @@ def send_data_to_flask(data):
             st.error("Request failed: " + str(e))
             return None
 
-#A função on_send_button_clicked() é uma função de retorno de chamada (callback) que é acionada quando o botão 'Send to Flask' é clicado
-def on_send_button_clicked():
+# A função on_send_button_clicked() é uma função de retorno de chamada (callback) que é acionada quando o botão 'Send to Flask' é clicado
 
+
+def on_send_button_clicked():
     """Chama a função do botão 'Send to Flask'."""
     if st.session_state.bacteria:
         # Envie dados para o Flask e atualize response_data no estado da sessão.
@@ -143,9 +148,9 @@ def on_go_back_button_clicked():
     st.session_state.page = 'search'
     st.session_state['active_tab'] = 0
     st.session_state.bacteria = None
- 
 
-#A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
+
+# A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
 def search_page():
     html.html('''
     <style>
@@ -173,11 +178,12 @@ def search_page():
 
 
 
-)
+              )
 
     st.header("Rastreador de dados para tratamento com antibióticos")
 
-    st.session_state.bacteria = st.text_input("Digite o nome ou código da bactéria")
+    st.session_state.bacteria = st.text_input(
+        "Digite o nome ou código da bactéria")
 
     st.button("Send to Flask", on_click=on_send_button_clicked,
               disabled=st.session_state.bacteria == "")
@@ -196,6 +202,25 @@ def results_page():
             st.session_state.response_data['results'], st.session_state.response_data['time_data'], meds)
 
       # Initialize the new dictionary
+        @st.cache_data
+        def check_occurrences(antibiotic, local, type_of_encounter, exam):
+            for row in raw_data:
+                if (antibiotic == 'todos' or row[1] == antibiotic) and \
+                    (local == 'todos' or row[6] == local) and \
+                    (type_of_encounter == 'todos' or row[7] == type_of_encounter) and \
+                        (exam == 'todos' or row[8] == exam):
+                    return True
+            return False
+
+        @st.cache_data
+        def check_occurrences_disease(disease, local, type_of_encounter, exam):
+            for row in raw_data:
+                if (disease == 'todos' or row[0] == disease) and \
+                    (local == 'todos' or row[6] == local) and \
+                    (type_of_encounter == 'todos' or row[7] == type_of_encounter) and \
+                        (exam == 'todos' or row[8] == exam):
+                    return True
+            return False
 
         st.balloons()
 
@@ -205,17 +230,29 @@ def results_page():
             st.header("Filters")
             slider_value = st.slider(
                 "Select a value", oldest_time, st.session_state.time)
+            unique_locals = set(row[6] for row in raw_data)
+            unique_types = set(row[7] for row in raw_data)
+            unique_exams = set(row[8] for row in raw_data)
+
+            # Create filters using Streamlit's selectbox
+            local_filter = st.selectbox(
+                'Filter by Local', ['todos'] + list(unique_locals))
+            type_filter = st.selectbox(
+                'Filter by Type of Encounter', ['todos'] + list(unique_types))
+            exam_filter = st.selectbox(
+                'Filter by Exam', ['todos'] + list(unique_exams))
 
         with results:
 
             with elements("nivo_charts"):
 
                 layout = [
-    dash.Item('results', 0, 0, 4, 2, isDraggable=False),
-    dash.Item('graphs', 0, 1, 5, 3,isDraggable=False),
-    dash.Item('res_graph', 1, 0, 4, 4,isDraggable=False),
-    dash.Item('sens_graph', 1, 1, 4, 4,isDraggable=False),  # Altere a posição para (1, 1)
-]
+                    dash.Item('results', 0, 0, 4, 2, isDraggable=False),
+                    dash.Item('graphs', 0, 1, 5, 3, isDraggable=False),
+                    dash.Item('res_graph', 1, 0, 4, 4, isDraggable=False),
+                    # Altere a posição para (1, 1)
+                    dash.Item('sens_graph', 1, 1, 4, 4, isDraggable=False),
+                ]
 
                 with dash.Grid(layout):
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
@@ -238,18 +275,22 @@ def results_page():
                             if active_disease in disease_to_antibiotics:
                                 for antibiotic in disease_to_antibiotics[active_disease]:
                                     # Check if the antibiotic has time data in antibiotics_to_times
+                                    print(oldest_time)
                                     if antibiotic in antibiotics_to_times:
-                                        # Extract oldest and latest times for this antibiotic
-                                        oldest_time, latest_time = antibiotics_to_times[antibiotic]
-                                        time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
 
-                                        # Compare with the slider value
-                                        if oldest_time >= slider_value:
-                                            list_item = create_list_item(
-                                                antibiotic, time_str)
-                                            with list_item:
-                                                mui.ListItemText(
-                                                    primary=antibiotic)
+                                        if check_occurrences(antibiotic, local_filter, type_filter, exam_filter):
+
+                                            # Extract oldest and latest times for this antibiotic
+                                            oldest_time, latest_time = antibiotics_to_times[antibiotic]
+                                            time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
+
+                                            # Compare with the slider value
+                                            if oldest_time >= slider_value:
+                                                list_item = create_list_item(
+                                                    antibiotic, time_str)
+                                                with list_item:
+                                                    mui.ListItemText(
+                                                        primary=antibiotic)
                                     else:
                                         print(
                                             f"Warning: No time data for {antibiotic}")
@@ -264,8 +305,9 @@ def results_page():
                                 row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
 
                             if update_time >= slider_value:
-                                filtered_diseases[disease] = filtered_diseases.get(
-                                    disease, 0) + 1
+                                if check_occurrences_disease(disease, local_filter, type_filter, exam_filter):
+                                    filtered_diseases[disease] = filtered_diseases.get(
+                                        disease, 0) + 1
 
     # Create Pie Data outside the loop
                         Pie_Data = [
@@ -376,10 +418,13 @@ def results_page():
                         # Calculate resistance data
                         for i, item in enumerate(raw_data):
                             if raw_data[i][3] > slider_value:
-                                if raw_data[i][2] == 'POSITIVO':
-                                    positive_resistence += 1
-                                else:
-                                    negative_resistence += 1
+                                if check_occurrences_disease(active_disease, local_filter, type_filter, exam_filter):
+                                    print(check_occurrences_disease(
+                                        active_disease, local_filter, type_filter, exam_filter))
+                                    if raw_data[i][2] == 'POSITIVO':
+                                        positive_resistence += 1
+                                    else:
+                                        negative_resistence += 1
 
                         res_data = [
                             {'id': 'POSITIVO', 'value': positive_resistence}]
@@ -477,10 +522,8 @@ def results_page():
                         active_antibiotic = disease_to_antibiotics[active_disease][
                             st.session_state['active_tab_antibiotic']]
 
-                       
-                        sens_data = [{'id': resistance, 'value': count} for resistance, count in sensitivity[antibiotic].items()]
-                        print(disease_to_antibiotics[active_disease], 'aaaaaaa')
-
+                        sens_data = [{'id': resistance, 'value': count}
+                                     for resistance, count in sensitivity[antibiotic].items()]
 
                         nivo.Pie(
                             data=sens_data,
@@ -569,10 +612,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-'''
-   
-       
-
-'''
