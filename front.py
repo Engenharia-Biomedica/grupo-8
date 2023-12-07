@@ -195,7 +195,7 @@ def results_page():
     st.button("Go back to Search", on_click=on_go_back_button_clicked)
     if 'response_data' in st.session_state and st.session_state.response_data:
         if st.session_state.response_data['results'] == []:
-            st.error("No results found")
+            st.error("Nenhum resultado encontrado")
             return
 
         raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity = create_data(
@@ -227,20 +227,20 @@ def results_page():
         sidebar, results = st.columns([1, 5])  # Adjust the ratio as needed
 
         with sidebar:
-            st.header("Filters")
+            st.header("Filtros")
             slider_value = st.slider(
-                "Select a value", oldest_time, st.session_state.time)
+                "Tempo desejado", oldest_time, st.session_state.time)
             unique_locals = set(row[6] for row in raw_data)
             unique_types = set(row[7] for row in raw_data)
             unique_exams = set(row[8] for row in raw_data)
 
             # Create filters using Streamlit's selectbox
             local_filter = st.selectbox(
-                'Filter by Local', ['todos'] + list(unique_locals))
+                'Filtre o Local', ['todos'] + list(unique_locals))
             type_filter = st.selectbox(
-                'Filter by Type of Encounter', ['todos'] + list(unique_types))
+                'Filtre o tipo de coleta', ['todos'] + list(unique_types))
             exam_filter = st.selectbox(
-                'Filter by Exam', ['todos'] + list(unique_exams))
+                'Filtre o tipo de exame', ['todos'] + list(unique_exams))
 
         with results:
 
@@ -256,7 +256,7 @@ def results_page():
 
                 with dash.Grid(layout):
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
-                        st.write(f"Results from Query with {bacteria}:")
+                        st.write(f"Resultados da consulta para: {bacteria}:")
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
