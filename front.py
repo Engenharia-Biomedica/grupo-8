@@ -239,7 +239,7 @@ def results_page():
         with sidebar:
             st.header("Filtros")
             slider_value = st.slider(
-                "Tempo desejado", oldest_time, st.session_state.time)
+                "Tempo desejado", oldest_time, st.session_state.time, format='MMMM Do YYYY')
             unique_locals = set(row[6] for row in raw_data)
             unique_types = set(row[7] for row in raw_data)
             unique_exams = set(row[8] for row in raw_data)
