@@ -192,7 +192,7 @@ def search_page():
 def results_page():
     global bacteria
     bacteria = st.session_state.bacteria
-    st.button("Go back to Search", on_click=on_go_back_button_clicked)
+    st.button("Volte para pesquisar ", on_click=on_go_back_button_clicked)
     if 'response_data' in st.session_state and st.session_state.response_data:
         if st.session_state.response_data['results'] == []:
             st.error("Nenhum resultado encontrado")
@@ -296,7 +296,7 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
-                        mui.Typography('Gráfico 1')
+                        mui.Typography('Gráfico de quantidade de indivíduos com dada doença')
 
                         filtered_diseases = {}
 
