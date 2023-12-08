@@ -257,11 +257,15 @@ def results_page():
             with elements("nivo_charts"):
 
                 layout = [
-                    dash.Item('results', 0, 0, 4, 2, isDraggable=False),
-                    dash.Item('graphs', 0, 1, 5, 3, isDraggable=False),
-                    dash.Item('res_graph', 1, 0, 4, 4, isDraggable=False),
-                    # Altere a posição para (1, 1)
-                    dash.Item('sens_graph', 1, 1, 4, 4, isDraggable=False),
+                    # Starts at column 0, spans 2 columns
+                    dash.Item('results', 0, 0, 2, 2, isDraggable=False),
+                    # Starts at column 2, spans 1 column
+                    dash.Item('graphs', 2, 1, 2, 2, isDraggable=False),
+                    # Starts at column 3, spans 1 column
+                    dash.Item('res_graph', 4, 1, 2, 2, isDraggable=False),
+                    # Starts at column 4, spans 1 column
+                    dash.Item('sens_graph', 6, 0, 2, 2, isDraggable=False),
+
                 ]
 
                 with dash.Grid(layout):
