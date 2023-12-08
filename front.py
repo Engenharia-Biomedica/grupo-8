@@ -41,6 +41,7 @@ def load_data(type, path):
 meds = load_data('csv', 'static\sample_data_clean.csv')
 
 
+#Armazena os resultados de uma funcão em caches e cria dados sobre resultados, tempo e medicamentos
 @st.cache_data
 def create_data(results, times, meds):
 
