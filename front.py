@@ -271,6 +271,8 @@ def results_page():
                 with dash.Grid(layout):
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
                         st.write(f"Resultados da consulta para {bacteria}:")
+                        mui.Typography('Bacterias e seus Antibióticos', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -309,7 +311,7 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
-                        mui.Typography('Porcentagem indivíduos com dada doença', sx={
+                        mui.Typography('Porcentagem de indivíduos com dada doença', sx={
                                        'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         filtered_diseases = {}
