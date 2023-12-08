@@ -10,6 +10,10 @@ import numpy as np
 import random
 from datetime import datetime, timedelta
 
+
+st.set_page_config(page_title="Rastreador de dados para tratamento com antibióticos",
+                   layout="wide", page_icon=':microscope:')
+
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 try:
     print(st.session_state.time)
@@ -195,6 +199,7 @@ def search_page():
 
 
 def results_page():
+
     global bacteria
     bacteria = st.session_state.bacteria
     st.button("Volte para pesquisar ", on_click=on_go_back_button_clicked)
@@ -300,7 +305,11 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
+<<<<<<< HEAD
                         mui.Typography('Porcentagem indivíduos com dada doença', sx={'textAlign': 'center'})
+=======
+                        mui.Typography('Título do Gráfico', sx={
+                                       'textAlign': 'center'})
 
                         filtered_diseases = {}
 
@@ -368,13 +377,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
@@ -480,13 +489,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
@@ -575,13 +584,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
