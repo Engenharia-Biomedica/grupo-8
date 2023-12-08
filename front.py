@@ -300,7 +300,7 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
-                        mui.Typography('Título do Gráfico', sx={'textAlign': 'center'})
+                        mui.Typography('Porcentagem indivíduos com dada doença', sx={'textAlign': 'center'})
 
                         filtered_diseases = {}
 
