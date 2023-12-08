@@ -622,6 +622,7 @@ def results_page():
         st.error("No results received or error in backend")
 
 
+#Controla a atividade do site a partir do estado da sessão do Streamlit
 def main():
     if 'page' not in st.session_state:
         st.session_state['page'] = 'search'
