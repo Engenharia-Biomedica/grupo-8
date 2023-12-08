@@ -122,11 +122,13 @@ def on_antibiotic_click(antibiotic, time_string):
 
 
 def send_data_to_flask(data):
+    st.balloons()
     with st.spinner('Processing...'):
         try:
             response = requests.post(
                 "http://localhost:5000/message", json=data)
             if response.status_code == 200:
+
                 return response.json()
             else:
                 st.error("Error from Flask: " + response.text)
@@ -231,8 +233,6 @@ def results_page():
                         (exam == 'todos' or row[8] == exam):
                     return True
             return False
-
-        st.balloons()
 
         sidebar, results = st.columns([1, 5])  # Adjust the ratio as needed
 
