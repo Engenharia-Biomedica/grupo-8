@@ -89,6 +89,11 @@ def create_data(results, times, meds):
 
                 update_time = datetime.strptime(
                     row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
+
+                if raw_data != []:
+                    if raw_data[-1][3] - update_time > timedelta(days=30):
+                        print('deleted!')
+                        continue
                 raw_data.append(
                     [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario'], local, encontro, exame])
 
@@ -275,7 +280,6 @@ def results_page():
                             if active_disease in disease_to_antibiotics:
                                 for antibiotic in disease_to_antibiotics[active_disease]:
                                     # Check if the antibiotic has time data in antibiotics_to_times
-                                    print(oldest_time)
                                     if antibiotic in antibiotics_to_times:
 
                                         if check_occurrences(antibiotic, local_filter, type_filter, exam_filter):
@@ -306,9 +310,8 @@ def results_page():
                                 row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
 
                             if update_time >= slider_value:
-                                if check_occurrences_disease(disease, local_filter, type_filter, exam_filter):
-                                    filtered_diseases[disease] = filtered_diseases.get(
-                                        disease, 0) + 1
+                                filtered_diseases[disease] = filtered_diseases.get(
+                                    disease, 0) + 1
 
     # Create Pie Data outside the loop
                         Pie_Data = [
@@ -421,8 +424,6 @@ def results_page():
                         for i, item in enumerate(raw_data):
                             if raw_data[i][3] > slider_value:
                                 if check_occurrences_disease(active_disease, local_filter, type_filter, exam_filter):
-                                    print(check_occurrences_disease(
-                                        active_disease, local_filter, type_filter, exam_filter))
                                     if raw_data[i][2] == 'POSITIVO':
                                         positive_resistence += 1
                                     else:
