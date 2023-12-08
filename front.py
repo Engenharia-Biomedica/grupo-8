@@ -262,9 +262,9 @@ def results_page():
                     # Starts at column 2, spans 1 column
                     dash.Item('graphs', 2, 1, 2, 2, isDraggable=False),
                     # Starts at column 3, spans 1 column
-                    dash.Item('res_graph', 4, 1, 2, 2, isDraggable=False),
+                    dash.Item('res_graph', 2, 1, 2, 2, isDraggable=False),
                     # Starts at column 4, spans 1 column
-                    dash.Item('sens_graph', 6, 0, 2, 2, isDraggable=False),
+                    dash.Item('sens_graph', 0, 2, 2, 2, isDraggable=False),
 
                 ]
 
@@ -310,7 +310,7 @@ def results_page():
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
                         mui.Typography('Porcentagem indivíduos com dada doença', sx={
-                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 50})
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         filtered_diseases = {}
 
@@ -404,7 +404,8 @@ def results_page():
                         )
 
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="res_graph"):
-                        mui.Typography('Gráfico de Resistência')
+                        mui.Typography('Gráfico de Resistência', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -518,7 +519,9 @@ def results_page():
                         # Display the oldest and latest times
 
                     with mui.Box(sx={'height': 500}, key='sens_graph'):
-                        mui.Typography('Gráfico de Sensibilidade')
+                        mui.Typography('Gráfico de Sensibilidade', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
+
                         if 'active_tab_antibiotic' not in st.session_state:
                             st.session_state['active_tab_antibiotic'] = 0
 
