@@ -1,4 +1,4 @@
-#Importar bibliotecas
+# Importar bibliotecas
 import streamlit as st
 from streamlit_modal import Modal
 import streamlit.components.v1 as html
@@ -10,6 +10,10 @@ import numpy as np
 import random
 from datetime import datetime, timedelta
 
+
+st.set_page_config(page_title="Rastreador de dados para tratamento com antibióticos",
+                   layout="wide", page_icon=':microscope:')
+
 meds = pd.DataFrame(pd.read_csv('static\sample_data_clean.csv', sep=','))
 try:
     print(st.session_state.time)
@@ -20,7 +24,9 @@ try:
 except AttributeError:
     st.session_state.time = datetime.now()
 
-#modificações no excel (converter de csv para xlsx)
+# modificações no excel (converter de csv para xlsx)
+
+
 @st.cache_data
 def load_data(type, path):
     match type:
@@ -35,8 +41,8 @@ def load_data(type, path):
 meds = load_data('csv', 'static\sample_data_clean.csv')
 
 
+#Armazena os resultados de uma funcão em caches e cria dados sobre resultados, tempo e medicamentos
 @st.cache_data
-#função para criar e organizar dados relacionados a doenças, antibióticos e horários
 def create_data(results, times, meds):
 
     raw_data = []
@@ -45,48 +51,56 @@ def create_data(results, times, meds):
     antibiotics_to_times = {}
     sensitivity = {}
 
-    for result in results:
-        antibiotic, micro_organism = result
-
-        # Update antibiotics
+    # Process each result
+    for antibiotic, micro_organism in results:
+        # Update antibiotics mapping
         disease_to_antibiotics.setdefault(
             micro_organism, []).append(antibiotic)
 
         # Update times
-        for time in times[micro_organism.lower()]:
-            disease_to_times.setdefault(
-                micro_organism, []).append(time)
+        for time in times.get(micro_organism.lower(), []):
+            disease_to_times.setdefault(micro_organism, []).append(time)
 
-        for antibiotic in set([result[0] for result in results]):
-            matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
-            times_list = [datetime.strptime(row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
-                          for _, row in matching_rows.iterrows() if pd.notnull(row['dh_ultima_atualizacao'])]
+    unique_antibiotics = set(antibiotic for antibiotic, _ in results)
+    for antibiotic in unique_antibiotics:
+        matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
+        times_list = pd.to_datetime(
+            matching_rows['dh_ultima_atualizacao'].dropna(), format='%Y-%m-%d %H:%M:%S.%f')
 
-            if times_list:
-                oldest_time = min(times_list)
-                latest_time = max(times_list)
-                antibiotics_to_times[antibiotic] = (oldest_time, latest_time)
-            else:
-                print(f"No valid time data for antibiotic: {antibiotic}")
+        if not times_list.empty:
+            antibiotics_to_times[antibiotic] = (
+                times_list.min().to_pydatetime(), times_list.max().to_pydatetime())
+            oldest_time = datetime(2010, 1, 1)
+        else:
+            print(f"No valid time data for antibiotic: {antibiotic}")
 
-    # Relacionar doenças com seus antibióticos correspondentes: 
+    # Relacionar doenças com seus antibióticos correspondentes:
     for disease, antibiotics in disease_to_antibiotics.items():
-        #para o sensível:
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             # Calculate sensitivity data for each antibiotic
-            antibiotic_sensitivity = matching_rows['cd_interpretacao_antibiograma'].value_counts(
+            sensitivity[antibiotic] = matching_rows['cd_interpretacao_antibiograma'].value_counts(
             ).to_dict()
-            # Cada antibiótico tera sua propria dado de resistencia. Isso está sendo salvo em uma um dicionário (sensitivity)
-            sensitivity[antibiotic] = antibiotic_sensitivity
             # Relacionar os antibioticos com as seus respectivos antibióticos
         for antibiotic in antibiotics:
             matching_rows = meds[meds['ds_antibiotico_microorganismo'] == antibiotic]
             for _, row in matching_rows.iterrows():
+                local = row['ds_local_coleta'] if pd.notna(
+                    row['ds_local_coleta']) else 'Nenhum'
+                encontro = row['ds_tipo_encontro'] if pd.notna(
+                    row['ds_tipo_encontro']) else 'Nenhum'
+                exame = row['ds_exame_millennium'] if pd.notna(
+                    row['ds_exame_millennium']) else 'Nenhum'
+
                 update_time = datetime.strptime(
                     row['dh_ultima_atualizacao'], '%Y-%m-%d %H:%M:%S.%f')
+
+                if raw_data != []:
+                    if raw_data[-1][3] - update_time > timedelta(days=30):
+                        print('deleted!')
+                        continue
                 raw_data.append(
-                    [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario']])
+                    [disease, antibiotic, row['ic_crescimento_microorganismo'], update_time, _, row['id_prontuario'], local, encontro, exame])
 
     return raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity
 
@@ -99,6 +113,7 @@ def create_list_item(antibiotic, time_string):
     return mui.ListItemButton(onClick=handle_click)
 
 
+#Apresenta detalhes sobre o antibiótico e o tempo associado quando um antibiótico é clicado
 def on_antibiotic_click(antibiotic, time_string):
     print(f"Antibiotic clicked: {antibiotic}, Time: {time_string}")
     modal = Modal(f'Details for {antibiotic}',
@@ -109,11 +124,13 @@ def on_antibiotic_click(antibiotic, time_string):
 
 
 def send_data_to_flask(data):
+    st.balloons()
     with st.spinner('Processing...'):
         try:
             response = requests.post(
                 "http://localhost:5000/message", json=data)
             if response.status_code == 200:
+
                 return response.json()
             else:
                 st.error("Error from Flask: " + response.text)
@@ -122,9 +139,10 @@ def send_data_to_flask(data):
             st.error("Request failed: " + str(e))
             return None
 
-#A função on_send_button_clicked() é uma função de retorno de chamada (callback) que é acionada quando o botão 'Send to Flask' é clicado
-def on_send_button_clicked():
+# A função on_send_button_clicked() é uma função de retorno de chamada (callback) que é acionada quando o botão 'Send to Flask' é clicado
 
+
+def on_send_button_clicked():
     """Chama a função do botão 'Send to Flask'."""
     if st.session_state.bacteria:
         # Envie dados para o Flask e atualize response_data no estado da sessão.
@@ -145,7 +163,7 @@ def on_go_back_button_clicked():
     st.session_state.bacteria = None
 
 
-#A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
+# A função search_page() está gerando e exibindo um código HTML. Esse código HTML inclui uma imagem que é posicionada no centro da página e gira continuamente.
 def search_page():
     html.html('''
     <style>
@@ -153,19 +171,17 @@ def search_page():
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 120px;
     height: 120px;
+    height: auto;
     margin:-60px 0 0 -60px;
-    -webkit-animation:spin 4s linear infinite;
-    -moz-animation:spin 4s linear infinite;
-    animation:spin 4s linear infinite;
+    margin-left: -110px;
+    width: 235px;
+ 
 }
-@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
-@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
-@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
               </style>
 
-    <img class="image" src="https://dinizismo.s3.sa-east-1.amazonaws.com/img.jpg" alt="" width="120" height="120">
+    <img class="image" src="https://dinizismo.s3.sa-east-1.amazonaws.com/Untitled.jpg" alt="">
 
 
 
@@ -177,51 +193,89 @@ def search_page():
 
               )
 
-    st.title("Buscador de antibioticos Grupo 8")
+    st.header("Rastreador de dados para tratamento com antibióticos")
 
-    st.session_state.bacteria = st.text_input("Digite o nome ou código da bactéria")
+    st.session_state.bacteria = st.text_input(
+        "Digite o nome ou código da bactéria")
 
-    st.button("Send to Flask", on_click=on_send_button_clicked,
+    st.button("Clique para pesquisar", on_click=on_send_button_clicked,
               disabled=st.session_state.bacteria == "")
 
 
+#Apresenta os resultados da pesquisa em uma inteerface Streamlit
 def results_page():
+
     global bacteria
     bacteria = st.session_state.bacteria
-    st.button("Go back to Search", on_click=on_go_back_button_clicked)
+    st.button("Volte para pesquisar ", on_click=on_go_back_button_clicked)
     if 'response_data' in st.session_state and st.session_state.response_data:
         if st.session_state.response_data['results'] == []:
-            st.error("No results found")
+            st.error("Nenhum resultado encontrado")
             return
 
         raw_data, disease_to_antibiotics, disease_to_times, antibiotics_to_times, oldest_time, sensitivity = create_data(
             st.session_state.response_data['results'], st.session_state.response_data['time_data'], meds)
 
       # Initialize the new dictionary
+        @st.cache_data
+        def check_occurrences(antibiotic, local, type_of_encounter, exam):
+            for row in raw_data:
+                if (antibiotic == 'todos' or row[1] == antibiotic) and \
+                    (local == 'todos' or row[6] == local) and \
+                    (type_of_encounter == 'todos' or row[7] == type_of_encounter) and \
+                        (exam == 'todos' or row[8] == exam):
+                    return True
+            return False
 
-        st.balloons()
+        @st.cache_data
+        def check_occurrences_disease(disease, local, type_of_encounter, exam):
+            for row in raw_data:
+                if (disease == 'todos' or row[0] == disease) and \
+                    (local == 'todos' or row[6] == local) and \
+                    (type_of_encounter == 'todos' or row[7] == type_of_encounter) and \
+                        (exam == 'todos' or row[8] == exam):
+                    return True
+            return False
 
         sidebar, results = st.columns([1, 5])  # Adjust the ratio as needed
 
         with sidebar:
-            st.header("Filters")
+            st.header("Filtros")
             slider_value = st.slider(
-                "Select a value", oldest_time, st.session_state.time)
+                "Tempo desejado", oldest_time, st.session_state.time, format='MMMM Do YYYY')
+            unique_locals = set(row[6] for row in raw_data)
+            unique_types = set(row[7] for row in raw_data)
+            unique_exams = set(row[8] for row in raw_data)
+
+            # Create filters using Streamlit's selectbox
+            local_filter = st.selectbox(
+                'Filtre o Local', ['todos'] + list(unique_locals))
+            type_filter = st.selectbox(
+                'Filtre o tipo de coleta', ['todos'] + list(unique_types))
+            exam_filter = st.selectbox(
+                'Filtre o tipo de exame', ['todos'] + list(unique_exams))
 
         with results:
 
             with elements("nivo_charts"):
 
                 layout = [
+                    # Starts at column 0, spans 2 columns
                     dash.Item('results', 0, 0, 2, 2, isDraggable=False),
-                    dash.Item('graphs', 0, 2, 2, 2,isDraggable=False),
-                    dash.Item('res_graph', 1, 1, 2, 2,isDraggable=False),
-                    dash.Item('sens_graph', 1, 2, 2, 2,isDraggable=False),
+                    # Starts at column 2, spans 1 column
+                    dash.Item('graphs', 2, 1, 2, 2, isDraggable=False),
+                    # Starts at column 3, spans 1 column
+                    dash.Item('res_graph', 2, 1, 2, 2, isDraggable=False),
+                    # Starts at column 4, spans 1 column
+                    dash.Item('sens_graph', 0, 2, 2, 2, isDraggable=False),
+
                 ]
 
                 with dash.Grid(layout):
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="results"):
-                        st.write(f"Results from Query with {bacteria}:")
+                        st.write(f"Resultados da consulta para {bacteria}:")
+                        mui.Typography('Bacterias e seus Antibióticos', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -241,22 +295,27 @@ def results_page():
                                 for antibiotic in disease_to_antibiotics[active_disease]:
                                     # Check if the antibiotic has time data in antibiotics_to_times
                                     if antibiotic in antibiotics_to_times:
-                                        # Extract oldest and latest times for this antibiotic
-                                        oldest_time, latest_time = antibiotics_to_times[antibiotic]
-                                        time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
 
-                                        # Compare with the slider value
-                                        if oldest_time >= slider_value:
-                                            list_item = create_list_item(
-                                                antibiotic, time_str)
-                                            with list_item:
-                                                mui.ListItemText(
-                                                    primary=antibiotic)
+                                        if check_occurrences(antibiotic, local_filter, type_filter, exam_filter):
+
+                                            # Extract oldest and latest times for this antibiotic
+                                            oldest_time, latest_time = antibiotics_to_times[antibiotic]
+                                            time_str = f" (Oldest Time: {oldest_time}, Latest Time: {latest_time})"
+
+                                            # Compare with the slider value
+                                            if oldest_time >= slider_value:
+                                                list_item = create_list_item(
+                                                    antibiotic, time_str)
+                                                with list_item:
+                                                    mui.ListItemText(
+                                                        primary=antibiotic)
                                     else:
                                         print(
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
+                        mui.Typography('Porcentagem de indivíduos com dada doença', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         filtered_diseases = {}
 
@@ -324,13 +383,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
@@ -350,6 +409,8 @@ def results_page():
                         )
 
                     with mui.Box(sx={"height": 500, 'border': '1px dashed grey', "overflow": "auto"}, key="res_graph"):
+                        mui.Typography('Gráfico de Resistência', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
 
                         # Create Tabs dynamically
                         if 'active_tab' not in st.session_state:
@@ -378,10 +439,11 @@ def results_page():
                         # Calculate resistance data
                         for i, item in enumerate(raw_data):
                             if raw_data[i][3] > slider_value:
-                                if raw_data[i][2] == 'POSITIVO':
-                                    positive_resistence += 1
-                                else:
-                                    negative_resistence += 1
+                                if check_occurrences_disease(active_disease, local_filter, type_filter, exam_filter):
+                                    if raw_data[i][2] == 'POSITIVO':
+                                        positive_resistence += 1
+                                    else:
+                                        negative_resistence += 1
 
                         res_data = [
                             {'id': 'POSITIVO', 'value': positive_resistence}]
@@ -434,13 +496,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
@@ -462,6 +524,9 @@ def results_page():
                         # Display the oldest and latest times
 
                     with mui.Box(sx={'height': 500}, key='sens_graph'):
+                        mui.Typography('Gráfico de Sensibilidade', sx={
+                                       'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 15})
+
                         if 'active_tab_antibiotic' not in st.session_state:
                             st.session_state['active_tab_antibiotic'] = 0
 
@@ -479,10 +544,8 @@ def results_page():
                         active_antibiotic = disease_to_antibiotics[active_disease][
                             st.session_state['active_tab_antibiotic']]
 
-                       
-                        sens_data = [{'id': resistance, 'value': count} for resistance, count in sensitivity[antibiotic].items()]
-                        print(disease_to_antibiotics[active_disease], 'aaaaaaa')
-
+                        sens_data = [{'id': resistance, 'value': count}
+                                     for resistance, count in sensitivity[antibiotic].items()]
 
                         nivo.Pie(
                             data=sens_data,
@@ -530,13 +593,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
@@ -559,6 +622,7 @@ def results_page():
         st.error("No results received or error in backend")
 
 
+#Controla a atividade do site a partir do estado da sessão do Streamlit
 def main():
     if 'page' not in st.session_state:
         st.session_state['page'] = 'search'
@@ -571,10 +635,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-'''
-   
-       
-
-'''
