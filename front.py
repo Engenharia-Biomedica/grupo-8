@@ -259,9 +259,8 @@ def results_page():
                 layout = [
                     dash.Item('results', 0, 0, 4, 2, isDraggable=False),
                     dash.Item('graphs', 0, 1, 5, 3, isDraggable=False),
-                    dash.Item('res_graph', 1, 0, 4, 4, isDraggable=False),
-                    # Altere a posição para (1, 1)
-                    dash.Item('sens_graph', 1, 1, 4, 4, isDraggable=False),
+                    dash.Item('res_graph', 0, 1, 4, 5, isDraggable=False),
+                    dash.Item('sens_graph', 0, 1, 4, 4, isDraggable=False),
                 ]
 
                 with dash.Grid(layout):
