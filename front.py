@@ -202,6 +202,7 @@ def search_page():
               disabled=st.session_state.bacteria == "")
 
 
+#Apresenta os resultados da pesquisa em uma inteerface Streamlit
 def results_page():
 
     global bacteria
