@@ -300,7 +300,7 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
-                        mui.Typography('Gráfico 1')
+                        mui.Typography('Porcentagem cm a doenca')
 
                         filtered_diseases = {}
 
@@ -368,13 +368,13 @@ def results_page():
                             ],
                             legends=[
                                 {
-                                    "anchor": "bottom",
-                                    "direction": "row",
+                                    "anchor": "bottom-left",  # You might try 'bottom-right' or 'bottom-left'
+                                    "direction": "column",  # Change to 'column' for vertical alignment if needed
                                     "justify": False,
-                                    "translateX": 0,
-                                    "translateY": 56,
-                                    "itemsSpacing": 0,
-                                    "itemWidth": 100,
+                                    "translateX": -70,
+                                    "translateY": 56,  # Adjust if necessary to move the legend up or down
+                                    "itemsSpacing": 5,  # Increase for more space between items
+                                    "itemWidth": 120,  # Increase if items or text are too squeezed
                                     "itemHeight": 18,
                                     "itemTextColor": "#999",
                                     "itemDirection": "left-to-right",
