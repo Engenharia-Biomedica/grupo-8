@@ -69,7 +69,7 @@ def create_data(results, times, meds):
         if not times_list.empty:
             antibiotics_to_times[antibiotic] = (
                 times_list.min().to_pydatetime(), times_list.max().to_pydatetime())
-            oldest_time = times_list.min().to_pydatetime()
+            oldest_time = datetime(2010, 1, 1)
         else:
             print(f"No valid time data for antibiotic: {antibiotic}")
 
@@ -257,12 +257,6 @@ def results_page():
             with elements("nivo_charts"):
 
                 layout = [
-
-                    dash.Item('results', 0, 0, 4, 2, isDraggable=False),
-                    dash.Item('graphs', 0, 1, 5, 3, isDraggable=False),
-                    dash.Item('res_graph', 0, 1, 4, 5, isDraggable=False),
-                    dash.Item('sens_graph', 0, 1, 4, 4, isDraggable=False),
-
                     # Starts at column 0, spans 2 columns
                     dash.Item('results', 0, 0, 2, 2, isDraggable=False),
                     # Starts at column 2, spans 1 column
@@ -271,7 +265,6 @@ def results_page():
                     dash.Item('res_graph', 4, 1, 2, 2, isDraggable=False),
                     # Starts at column 4, spans 1 column
                     dash.Item('sens_graph', 6, 0, 2, 2, isDraggable=False),
-
 
                 ]
 
@@ -316,12 +309,6 @@ def results_page():
                                             f"Warning: No time data for {antibiotic}")
 
                     with mui.Box(sx={"height": 500}, key="graphs"):
-
-                        mui.Typography('Porcentagem indivíduos com dada doença', sx={'textAlign': 'center'})
-
-                        mui.Typography('Título do Gráfico', sx={
-                                       'textAlign': 'center'})
-
                         mui.Typography('Porcentagem indivíduos com dada doença', sx={
                                        'textAlign': 'center', 'fontFamily': 'Raleway', 'fontSize': 50})
 
