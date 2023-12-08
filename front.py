@@ -113,6 +113,7 @@ def create_list_item(antibiotic, time_string):
     return mui.ListItemButton(onClick=handle_click)
 
 
+#Apresenta detalhes sobre o antibiótico e o tempo associado quando um antibiótico é clicado
 def on_antibiotic_click(antibiotic, time_string):
     print(f"Antibiotic clicked: {antibiotic}, Time: {time_string}")
     modal = Modal(f'Details for {antibiotic}',
